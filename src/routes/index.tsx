@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useConnection, useReadContract } from "wagmi";
-import { FAUCET, monadTestnet, streakAbi } from "@/lib/chain";
+import { FAUCET, activeChain, streakAbi } from "@/lib/chain";
 import { useI18n } from "@/lib/i18n/provider";
 import { readSave, subscribeStore, type Save, EMPTY_SAVE } from "@/lib/storage";
 import { useContracts, useHasCode } from "@/components/use-contracts";
@@ -24,7 +24,7 @@ function Home() {
     abi: streakAbi,
     functionName: "streak",
     args: connection.address ? [connection.address] : undefined,
-    chainId: monadTestnet.id,
+    chainId: activeChain.id,
     query: { enabled: Boolean(pair.streak && connection.address && code.hasCode) },
   });
 
@@ -61,6 +61,10 @@ function Home() {
           <p className="font-display text-xl">{t.home.strategies}</p>
         </Link>
       </div>
+      <Link to="/agent" className="card p-4 no-underline">
+        <p className="font-display text-xl">{t.home.agentTitle}</p>
+        <p className="mt-1 text-sm text-ink-soft">{t.home.agentBody}</p>
+      </Link>
       <Link to="/sol" className="card p-4 no-underline">
         <p className="font-display text-xl">{t.home.solTitle}</p>
         <p className="mt-1 text-sm text-ink-soft">{t.home.solBody}</p>

@@ -6,11 +6,17 @@ import { offlineReply } from "@/lib/offline-sol";
 export const Route = createFileRoute("/sol")({ component: SolPage });
 
 type Mode = "checking" | "live" | "offline";
+type ProviderId = "xai" | "kimi" | "qwen";
+type Flags = Record<ProviderId, boolean>;
 type ChatMessage = { id: number; role: "user" | "sol"; text: string };
+
+const emptyFlags: Flags = { xai: false, kimi: false, qwen: false };
 
 function SolPage() {
   const { t, lang } = useI18n();
   const [mode, setMode] = useState<Mode>("checking");
+  const [flags, setFlags] = useState<Flags>(emptyFlags);
+  const [provider, setProvider] = useState<ProviderId>("xai");
   const [text, setText] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
@@ -26,8 +32,15 @@ function SolPage() {
     let gone = false;
     void fetch("/api/sol")
       .then((res) => res.json())
-      .then((body: { mode?: string }) => {
+      .then((body: { mode?: string; providers?: Partial<Flags> }) => {
         if (gone) return;
+        const next = {
+          xai: Boolean(body.providers?.xai),
+          kimi: Boolean(body.providers?.kimi),
+          qwen: Boolean(body.providers?.qwen),
+        };
+        setFlags(next);
+        setProvider(next.xai ? "xai" : next.kimi ? "kimi" : next.qwen ? "qwen" : "xai");
         setMode(body.mode === "live" ? "live" : "offline");
       })
       .catch(() => {
@@ -52,9 +65,10 @@ function SolPage() {
     const history = [...messages.filter((item) => item.id !== 1), { id: userId, role: "user" as const, text: content }];
     setMessages((prev) => [...prev, { id: userId, role: "user", text: content }, { id: solId, role: "sol", text: "" }]);
     setBusy(true);
-    if (mode !== "live") {
-      const reply = offlineReply(t, content);
-      setMessages((prev) => prev.map((item) => (item.id === solId ? { ...item, text: reply } : item)));
+    if (!flags[provider]) {
+      setMessages((prev) =>
+        prev.map((item) => (item.id === solId ? { ...item, text: mode === "offline" && !flags.xai && !flags.kimi && !flags.qwen ? offlineReply(t, content) : t.sol.notConfigured } : item)),
+      );
       setBusy(false);
       return;
     }
@@ -64,6 +78,7 @@ function SolPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lang,
+          provider,
           messages: history.map((item) => ({
             role: item.role === "sol" ? "assistant" : "user",
             content: item.text,
@@ -77,6 +92,8 @@ function SolPage() {
           setMode("offline");
           const reply = offlineReply(t, content);
           setMessages((prev) => prev.map((item) => (item.id === solId ? { ...item, text: reply } : item)));
+        } else if (body.mode === "unconfigured") {
+          setMessages((prev) => prev.map((item) => (item.id === solId ? { ...item, text: t.sol.notConfigured } : item)));
         } else {
           setError(true);
           setMessages((prev) => prev.filter((item) => item.id !== solId));
@@ -133,11 +150,32 @@ function SolPage() {
       <header className="pb-3">
         <div className="flex items-center justify-between gap-3">
           <h1 className="font-display text-4xl">{t.sol.title}</h1>
-          <span className={mode === "live" ? "pill pill-live" : "pill pill-warn"}>
-            {mode === "checking" ? t.sol.checking : mode === "live" ? t.sol.live : t.sol.offline}
+          <span className={mode === "checking" ? "pill" : flags[provider] ? "pill pill-live" : "pill pill-warn"}>
+            {mode === "checking" ? t.sol.checking : flags[provider] ? t.sol.live : t.sol.offline}
           </span>
         </div>
-        <p className="mt-1 text-sm text-ink-soft">{mode === "live" ? t.sol.lead : t.sol.demoNote}</p>
+        <p className="mt-1 text-sm text-ink-soft">
+          {flags[provider] ? t.sol.lead : mode === "offline" ? t.sol.demoNote : t.sol.notConfigured}
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {(
+            [
+              ["xai", t.sol.grok],
+              ["kimi", t.sol.kimi],
+              ["qwen", t.sol.qwen],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className={provider === id ? "btn btn-sun min-h-9 px-3 py-1" : "btn btn-ghost min-h-9 px-3 py-1"}
+              onClick={() => setProvider(id)}
+            >
+              {label}
+              {flags[id] ? "" : ` · ${t.sol.off}`}
+            </button>
+          ))}
+        </div>
       </header>
       <div ref={scroller} className="card flex-1 space-y-3 overflow-y-auto p-4">
         {messages.map((item) => (

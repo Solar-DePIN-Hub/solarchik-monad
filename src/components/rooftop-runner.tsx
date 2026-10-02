@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
+import { parseEther } from "viem";
+import { useConnection, usePublicClient, useReadContract, useWriteContract } from "wagmi";
+import { useContracts, useHasCode } from "@/components/use-contracts";
+import { ensureMonadChain } from "@/components/wallet-button";
 import { FALLBACK_PALETTE, Runner, type Palette, type RunSnapshot } from "@/game/runner";
+import { activeChain, sunsAbi, txUrl } from "@/lib/chain";
 import { useI18n } from "@/lib/i18n/provider";
 import { addRun, readMute, readSave, writeMute } from "@/lib/storage";
+import { createSunPoster, sessionAccount, type SunFeed } from "@/lib/sun-session";
 
 type Sfx = {
   unlock: () => void;
@@ -80,11 +86,67 @@ export function RooftopRunner() {
   const { t } = useI18n();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sfxRef = useRef<Sfx | null>(null);
+  const posterRef = useRef<ReturnType<typeof createSunPoster> | null>(null);
   const [snap, setSnap] = useState<RunSnapshot>(initialSnap);
   const [bank, setBank] = useState(0);
   const [best, setBest] = useState(0);
   const [muted, setMuted] = useState(false);
   const [runSuns, setRunSuns] = useState(0);
+  const [sessionAddr, setSessionAddr] = useState<`0x${string}` | null>(null);
+  const [feed, setFeed] = useState<SunFeed>({ pending: 0, confirmed: 0, lastHash: null, lastCount: 0, error: null });
+  const [arming, setArming] = useState(false);
+  const [armError, setArmError] = useState("");
+  const pair = useContracts();
+  const code = useHasCode(pair.suns);
+  const connection = useConnection();
+  const client = usePublicClient({ chainId: activeChain.id });
+  const write = useWriteContract();
+  const onchain = useReadContract({
+    address: pair.suns ?? undefined,
+    abi: sunsAbi,
+    functionName: "sunsOf",
+    args: connection.address ? [connection.address] : undefined,
+    chainId: activeChain.id,
+    query: {
+      enabled: Boolean(pair.suns && connection.address && code.hasCode),
+      refetchInterval: snap.phase === "running" ? 2000 : false,
+    },
+  });
+  const session = useReadContract({
+    address: pair.suns ?? undefined,
+    abi: sunsAbi,
+    functionName: "sessionOf",
+    args: connection.address ? [connection.address] : undefined,
+    chainId: activeChain.id,
+    query: { enabled: Boolean(pair.suns && connection.address && code.hasCode) },
+  });
+  const sessionRow = session.data;
+  const armed = Boolean(
+    sessionAddr &&
+      sessionRow &&
+      sessionRow[0].toLowerCase() === sessionAddr.toLowerCase() &&
+      !sessionRow[4] &&
+      Number(sessionRow[1]) * 1000 > Date.now() &&
+      sessionRow[2] < sessionRow[3],
+  );
+
+  useEffect(() => {
+    setSessionAddr(sessionAccount().address);
+  }, []);
+
+  useEffect(() => {
+    if (!armed || !pair.suns) {
+      posterRef.current?.stop();
+      posterRef.current = null;
+      return;
+    }
+    const poster = createSunPoster(pair.suns, setFeed);
+    posterRef.current = poster;
+    return () => {
+      poster.stop();
+      if (posterRef.current === poster) posterRef.current = null;
+    };
+  }, [armed, pair.suns]);
 
   useEffect(() => {
     const save = readSave();
@@ -141,7 +203,10 @@ export function RooftopRunner() {
       engine.draw(ctx);
       for (const event of engine.pullEvents()) {
         if (event === "jump") sfx.jump();
-        if (event === "collect") sfx.collect();
+        if (event === "collect") {
+          sfx.collect();
+          posterRef.current?.note();
+        }
         if (event === "die") sfx.die();
       }
       const next = engine.snapshot();
@@ -219,6 +284,32 @@ export function RooftopRunner() {
     };
   }, []);
 
+  async function arm() {
+    if (!pair.suns || !sessionAddr || !connection.address) return;
+    setArmError("");
+    setArming(true);
+    try {
+      if (connection.chainId !== activeChain.id) await ensureMonadChain();
+      const expiry = BigInt(Math.floor(Date.now() / 1000) + 2 * 60 * 60);
+      const hash = await write.writeContractAsync({
+        address: pair.suns,
+        abi: sunsAbi,
+        functionName: "authorize",
+        args: [sessionAddr, 40, expiry],
+        value: parseEther("0.01"),
+        chainId: activeChain.id,
+      });
+      if (client) await client.waitForTransactionReceipt({ hash });
+      await session.refetch();
+    } catch (err) {
+      setArmError(err instanceof Error ? err.message.slice(0, 140) : t.game.armFail);
+    } finally {
+      setArming(false);
+    }
+  }
+
+  const chainTotal = onchain.data !== undefined ? onchain.data.toString() : "—";
+
   function begin() {
     window.__runner?.start();
     setSnap((prev) => ({ ...prev, phase: "running", suns: 0, distance: 0, hint: null }));
@@ -231,6 +322,18 @@ export function RooftopRunner() {
         <div className="card pointer-events-auto px-3 py-2">
           <p className="text-xs font-semibold text-ink-soft">{t.home.sunsLabel}</p>
           <p className="font-display text-2xl leading-none">{snap.suns}</p>
+          <p className="mt-1 text-xs font-semibold">
+            {t.game.onchain}: {code.hasCode ? chainTotal : "—"}
+            {feed.pending > 0 ? ` · ${feed.pending}` : ""}
+          </p>
+          {feed.lastHash ? (
+            <a className="text-xs font-semibold underline" href={txUrl(feed.lastHash)} target="_blank" rel="noreferrer">
+              {t.game.lastTx}
+            </a>
+          ) : (
+            <p className="text-xs text-ink-soft">{armed ? t.game.armed : t.game.deviceOnly}</p>
+          )}
+          {feed.error ? <p className="max-w-40 text-xs text-ember">{feed.error}</p> : null}
         </div>
         <div className="card pointer-events-auto px-3 py-2 text-right">
           <p className="text-xs font-semibold text-ink-soft">
@@ -277,6 +380,13 @@ export function RooftopRunner() {
             <p className="mt-1 text-sm text-ink-soft">
               {t.game.bank}: {bank} · {t.home.best}: {best}
             </p>
+            <p className="mt-2 text-sm">{armed ? t.game.armedBody : code.hasCode ? t.game.armBody : t.game.noSuns}</p>
+            {code.hasCode && connection.address && !armed ? (
+              <button type="button" className="btn btn-sun btn-block mt-3" disabled={arming} onClick={() => void arm()}>
+                {arming ? t.game.arming : t.game.arm}
+              </button>
+            ) : null}
+            {armError ? <p className="mt-2 text-sm text-ember">{armError}</p> : null}
             <button type="button" className="btn btn-ember btn-block mt-4" onClick={begin}>
               {snap.phase === "over" ? t.game.again : t.game.start}
             </button>

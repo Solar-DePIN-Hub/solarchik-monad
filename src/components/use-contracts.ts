@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { useBytecode } from "wagmi";
-import { monadTestnet } from "@/lib/chain";
+import { activeChain } from "@/lib/chain";
 import { readContracts, subscribeStore, type ContractPair } from "@/lib/storage";
 
 const empty: ContractPair = {
   streak: null,
   strategy: null,
+  suns: null,
+  agent: null,
   streakSource: "missing",
   strategySource: "missing",
+  sunsSource: "missing",
+  agentSource: "missing",
 };
 
 export function useContracts() {
@@ -23,7 +27,7 @@ export function useContracts() {
 export function useHasCode(address: `0x${string}` | null) {
   const query = useBytecode({
     address: address ?? undefined,
-    chainId: monadTestnet.id,
+    chainId: activeChain.id,
     query: { enabled: Boolean(address) },
   });
   const code = query.data;

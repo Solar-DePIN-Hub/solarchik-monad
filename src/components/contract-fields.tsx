@@ -8,13 +8,17 @@ export function ContractFields() {
   const pair = useContracts();
   const [streak, setStreak] = useState("");
   const [strategy, setStrategy] = useState("");
+  const [suns, setSuns] = useState("");
+  const [agent, setAgent] = useState("");
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
     const current = readContracts();
     setStreak(current.streak ?? "");
     setStrategy(current.strategy ?? "");
-  }, [pair.streak, pair.strategy]);
+    setSuns(current.suns ?? "");
+    setAgent(current.agent ?? "");
+  }, [pair.streak, pair.strategy, pair.suns, pair.agent]);
 
   const sourceLabel = (source: "device" | "env" | "missing") =>
     source === "device" ? t.contracts.device : source === "env" ? t.contracts.env : t.contracts.missing;
@@ -47,12 +51,36 @@ export function ContractFields() {
         autoCapitalize="off"
         onChange={(e) => setStrategy(e.target.value)}
       />
+      <label className="mt-3 block text-sm font-semibold" htmlFor="suns-addr">
+        {t.contracts.suns}
+        <span className="ml-2 font-medium text-ink-soft">{sourceLabel(pair.sunsSource)}</span>
+      </label>
+      <input
+        id="suns-addr"
+        className="field mt-1"
+        value={suns}
+        spellCheck={false}
+        autoCapitalize="off"
+        onChange={(e) => setSuns(e.target.value)}
+      />
+      <label className="mt-3 block text-sm font-semibold" htmlFor="agent-addr">
+        {t.contracts.agent}
+        <span className="ml-2 font-medium text-ink-soft">{sourceLabel(pair.agentSource)}</span>
+      </label>
+      <input
+        id="agent-addr"
+        className="field mt-1"
+        value={agent}
+        spellCheck={false}
+        autoCapitalize="off"
+        onChange={(e) => setAgent(e.target.value)}
+      />
       <div className="mt-3 flex gap-2">
         <button
           type="button"
           className="btn btn-sun"
           onClick={() => {
-            const ok = saveContractOverride({ streak, strategy });
+            const ok = saveContractOverride({ streak, strategy, suns, agent });
             setMsg(ok ? t.contracts.saved : t.contracts.invalid);
           }}
         >

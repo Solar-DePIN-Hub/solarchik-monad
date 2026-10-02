@@ -1,6 +1,6 @@
 import { parseAddress } from "@/lib/chain";
 
-export type TxKind = "check-in" | "mint" | "update" | "transfer";
+export type TxKind = "check-in" | "mint" | "update" | "transfer" | "sun" | "agent";
 
 export type SavedTx = {
   hash: string;
@@ -20,8 +20,12 @@ export type Save = {
 export type ContractPair = {
   streak: `0x${string}` | null;
   strategy: `0x${string}` | null;
+  suns: `0x${string}` | null;
+  agent: `0x${string}` | null;
   streakSource: "device" | "env" | "missing";
   strategySource: "device" | "env" | "missing";
+  sunsSource: "device" | "env" | "missing";
+  agentSource: "device" | "env" | "missing";
 };
 
 const SAVE_KEY = "solarchik.v1";
@@ -96,7 +100,7 @@ export function addTx(tx: SavedTx) {
   writeSave({ ...prev, txs: [tx, ...prev.txs].slice(0, 12) });
 }
 
-type DeviceContracts = { streak?: string; strategy?: string };
+type DeviceContracts = { streak?: string; strategy?: string; suns?: string; agent?: string };
 
 function readDevice(): DeviceContracts {
   if (!canStore()) return {};
@@ -108,7 +112,9 @@ function readDevice(): DeviceContracts {
   }
 }
 
-function envAddress(key: "VITE_STREAK_ADDRESS" | "VITE_STRATEGY_ADDRESS") {
+function envAddress(
+  key: "VITE_STREAK_ADDRESS" | "VITE_STRATEGY_ADDRESS" | "VITE_SUNS_ADDRESS" | "VITE_AGENT_ADDRESS",
+) {
   const value = import.meta.env[key];
   return typeof value === "string" ? value : undefined;
 }
@@ -128,20 +134,30 @@ export function readContracts(): ContractPair {
   const device = readDevice();
   const streak = resolveOne(device.streak, envAddress("VITE_STREAK_ADDRESS"));
   const strategy = resolveOne(device.strategy, envAddress("VITE_STRATEGY_ADDRESS"));
+  const suns = resolveOne(device.suns, envAddress("VITE_SUNS_ADDRESS"));
+  const agent = resolveOne(device.agent, envAddress("VITE_AGENT_ADDRESS"));
   return {
     streak: streak.address,
     strategy: strategy.address,
+    suns: suns.address,
+    agent: agent.address,
     streakSource: streak.source,
     strategySource: strategy.source,
+    sunsSource: suns.source,
+    agentSource: agent.source,
   };
 }
 
-export function saveContractOverride(next: { streak: string; strategy: string }) {
-  if (!canStore()) return;
+export function saveContractOverride(next: { streak: string; strategy: string; suns?: string; agent?: string }) {
+  if (!canStore()) return false;
   const streak = parseAddress(next.streak);
   const strategy = parseAddress(next.strategy);
-  if (!streak || !strategy) return false;
-  localStorage.setItem(CONTRACT_KEY, JSON.stringify({ streak, strategy }));
+  const sunsRaw = (next.suns ?? "").trim();
+  const agentRaw = (next.agent ?? "").trim();
+  const suns = sunsRaw ? parseAddress(sunsRaw) : null;
+  const agent = agentRaw ? parseAddress(agentRaw) : null;
+  if (!streak || !strategy || (sunsRaw && !suns) || (agentRaw && !agent)) return false;
+  localStorage.setItem(CONTRACT_KEY, JSON.stringify({ streak, strategy, suns, agent }));
   emit();
   return true;
 }

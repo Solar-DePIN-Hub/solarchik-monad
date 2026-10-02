@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ContractFields } from "@/components/contract-fields";
-import { EXPLORER, FAUCET, HACKATHON, MONAD_REPO, ORIGINAL_REPO } from "@/lib/chain";
+import { EXPLORER, FAUCET, HACKATHON, MONAD_REPO, ORIGINAL_REPO, activeChain } from "@/lib/chain";
 import { useI18n } from "@/lib/i18n/provider";
 
 export const Route = createFileRoute("/judges")({ component: JudgesPage });
@@ -76,6 +76,19 @@ function JudgesPage() {
         <p className="mt-2 text-sm">{t.judges.onNft}</p>
       </section>
       <section className="card p-4">
+        <h2 className="font-display text-2xl">{t.judges.sessionTitle}</h2>
+        <p className="mt-2 text-sm">{t.judges.sessionBody}</p>
+      </section>
+      <section className="card p-4">
+        <h2 className="font-display text-2xl">{t.judges.agentCardTitle}</h2>
+        <p className="mt-2 text-sm">{t.judges.agentCardBody}</p>
+      </section>
+      <section className="card p-4">
+        <h2 className="font-display text-2xl">{t.judges.sponsorTitle}</h2>
+        <p className="mt-2 text-sm">{t.judges.sponsorBody}</p>
+        <p className="mt-2 text-sm">{t.judges.portableBody}</p>
+      </section>
+      <section className="card p-4">
         <h2 className="font-display text-2xl">{t.judges.simTitle}</h2>
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm">
           <li>{t.judges.simRun}</li>
@@ -89,15 +102,17 @@ function JudgesPage() {
         <dl className="mt-3 space-y-2">
           <div>
             <dt className="font-semibold">{t.judges.chainId}</dt>
-            <dd>10143</dd>
+            <dd>
+              {activeChain.id} · {activeChain.name}
+            </dd>
           </div>
           <div>
             <dt className="font-semibold">{t.judges.rpc}</dt>
-            <dd>https://testnet-rpc.monad.xyz</dd>
+            <dd>{activeChain.rpcUrls.default.http[0]}</dd>
           </div>
           <div>
             <dt className="font-semibold">{t.judges.token}</dt>
-            <dd>MON</dd>
+            <dd>{activeChain.nativeCurrency.symbol}</dd>
           </div>
           <div>
             <dt className="font-semibold">{t.judges.explorer}</dt>

@@ -4,7 +4,7 @@ import { useConnection, usePublicClient, useReadContract, useWriteContract } fro
 import { ContractFields } from "@/components/contract-fields";
 import { useContracts, useHasCode } from "@/components/use-contracts";
 import { ensureMonadChain } from "@/components/wallet-button";
-import { addressUrl, monadTestnet, streakAbi, txUrl } from "@/lib/chain";
+import { addressUrl, activeChain, streakAbi, txUrl } from "@/lib/chain";
 import { useI18n } from "@/lib/i18n/provider";
 import { addTx, readSave, subscribeStore, type SavedTx } from "@/lib/storage";
 import { classifyTx, formatCountdown, type TxFail } from "@/lib/tx";
@@ -18,7 +18,7 @@ function CheckInPage() {
   const pair = useContracts();
   const connection = useConnection();
   const code = useHasCode(pair.streak);
-  const client = usePublicClient({ chainId: monadTestnet.id });
+  const client = usePublicClient({ chainId: activeChain.id });
   const write = useWriteContract();
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   const [status, setStatus] = useState<Status>("idle");
@@ -41,7 +41,7 @@ function CheckInPage() {
     abi: streakAbi,
     functionName: "streak",
     args: connection.address ? [connection.address] : undefined,
-    chainId: monadTestnet.id,
+    chainId: activeChain.id,
     query: { enabled },
   });
   const last = useReadContract({
@@ -49,7 +49,7 @@ function CheckInPage() {
     abi: streakAbi,
     functionName: "lastCheckIn",
     args: connection.address ? [connection.address] : undefined,
-    chainId: monadTestnet.id,
+    chainId: activeChain.id,
     query: { enabled },
   });
   const can = useReadContract({
@@ -57,7 +57,7 @@ function CheckInPage() {
     abi: streakAbi,
     functionName: "canCheckIn",
     args: connection.address ? [connection.address] : undefined,
-    chainId: monadTestnet.id,
+    chainId: activeChain.id,
     query: { enabled },
   });
 
@@ -65,7 +65,7 @@ function CheckInPage() {
   const nextAt = lastSec > 0 ? lastSec + 24 * 60 * 60 : 0;
   const left = nextAt > now ? nextAt - now : 0;
   const resetting = lastSec > 0 && now > lastSec + 48 * 60 * 60;
-  const ready = Boolean(can.data) && connection.chainId === monadTestnet.id;
+  const ready = Boolean(can.data) && connection.chainId === activeChain.id;
   const when = new Intl.DateTimeFormat(lang === "uk" ? "uk-UA" : "en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -75,12 +75,12 @@ function CheckInPage() {
     if (!pair.streak || !client) return;
     setStatus("pending");
     try {
-      if (connection.chainId !== monadTestnet.id) await ensureMonadChain();
+      if (connection.chainId !== activeChain.id) await ensureMonadChain();
       const hash = await write.mutateAsync({
         address: pair.streak,
         abi: streakAbi,
         functionName: "checkIn",
-        chainId: monadTestnet.id,
+        chainId: activeChain.id,
       });
       await client.waitForTransactionReceipt({ hash });
       addTx({ hash, at: Date.now(), kind: "check-in", note: "" });

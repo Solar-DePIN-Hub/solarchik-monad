@@ -11,8 +11,34 @@ export const monadTestnet = defineChain({
   testnet: true,
 });
 
-export const EXPLORER = "https://testnet.monadexplorer.com";
-export const FAUCET = "https://faucet.monad.xyz";
+export const arbitrumSepolia = defineChain({
+  id: 421614,
+  name: "Arbitrum Sepolia",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: ["https://sepolia-rollup.arbitrum.io/rpc"] } },
+  blockExplorers: {
+    default: { name: "Arbiscan", url: "https://sepolia.arbiscan.io" },
+  },
+  testnet: true,
+});
+
+const selectedId = Number(import.meta.env.VITE_CHAIN_ID || "10143");
+export const activeChain = selectedId === arbitrumSepolia.id ? arbitrumSepolia : monadTestnet;
+
+/** Chainlink ETH/USD on Arbitrum Sepolia. Monad testnet has no Chainlink price feeds. */
+export const CHAINLINK_FEEDS: Record<number, `0x${string}` | null> = {
+  [monadTestnet.id]: null,
+  [arbitrumSepolia.id]: "0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165",
+};
+
+export const priceFeed = CHAINLINK_FEEDS[activeChain.id] ?? null;
+
+export const EXPLORER = activeChain.blockExplorers.default.url;
+export const FAUCET =
+  activeChain.id === arbitrumSepolia.id
+    ? "https://www.alchemy.com/faucets/arbitrum-sepolia"
+    : "https://faucet.monad.xyz";
+export const CHAIN_HEX = `0x${activeChain.id.toString(16)}` as `0x${string}`;
 export const MONAD_HEX = "0x279f";
 /** This submission. Not the Solana Mobile repository. */
 export const MONAD_REPO = "https://github.com/Solar-DePIN-Hub/solarchik-monad";
@@ -182,6 +208,190 @@ export const strategyAbi = [
       { name: "tokenId", type: "uint256" },
     ],
     outputs: [],
+  },
+] as const;
+
+export const sunsAbi = [
+  {
+    type: "function",
+    name: "authorize",
+    stateMutability: "payable",
+    inputs: [
+      { name: "sessionKey", type: "address" },
+      { name: "spendLimit", type: "uint32" },
+      { name: "expiry", type: "uint64" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "revoke",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "recordSun",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "recordSuns",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "count", type: "uint32" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "sunsOf",
+    stateMutability: "view",
+    inputs: [{ name: "player", type: "address" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "sessionOf",
+    stateMutability: "view",
+    inputs: [{ name: "player", type: "address" }],
+    outputs: [
+      { name: "key", type: "address" },
+      { name: "expiry", type: "uint64" },
+      { name: "spent", type: "uint32" },
+      { name: "limit", type: "uint32" },
+      { name: "revoked", type: "bool" },
+    ],
+  },
+] as const;
+
+export const agentAbi = [
+  {
+    type: "function",
+    name: "configure",
+    stateMutability: "payable",
+    inputs: [
+      { name: "agentKey", type: "address" },
+      { name: "maxPer", type: "uint256" },
+      { name: "daily", type: "uint256" },
+      { name: "allowedMask", type: "uint8" },
+    ],
+    outputs: [],
+  },
+  { type: "function", name: "pause", stateMutability: "nonpayable", inputs: [], outputs: [] },
+  { type: "function", name: "unpause", stateMutability: "nonpayable", inputs: [], outputs: [] },
+  { type: "function", name: "revoke", stateMutability: "nonpayable", inputs: [], outputs: [] },
+  {
+    type: "function",
+    name: "recordPaper",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "strategyId", type: "uint256" },
+      { name: "action", type: "uint8" },
+      { name: "size", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "quote",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [
+      { name: "price", type: "int256" },
+      { name: "decimals", type: "uint8" },
+      { name: "fromChainlink", type: "bool" },
+    ],
+  },
+  {
+    type: "function",
+    name: "owner",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address" }],
+  },
+  {
+    type: "function",
+    name: "agent",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address" }],
+  },
+  {
+    type: "function",
+    name: "paused",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "feed",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "address" }],
+  },
+  {
+    type: "function",
+    name: "maxPerTrade",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "dailyCap",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "spentToday",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "paperCount",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "paperAt",
+    stateMutability: "view",
+    inputs: [{ name: "index", type: "uint256" }],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "strategyId", type: "uint256" },
+          { name: "action", type: "uint8" },
+          { name: "price", type: "int256" },
+          { name: "decimals", type: "uint8" },
+          { name: "fromChainlink", type: "bool" },
+          { name: "size", type: "uint256" },
+          { name: "at", type: "uint64" },
+        ],
+      },
+    ],
+  },
+  {
+    type: "event",
+    name: "PaperRecorded",
+    inputs: [
+      { name: "agentKey", type: "address", indexed: true },
+      { name: "strategyId", type: "uint256", indexed: true },
+      { name: "action", type: "uint8", indexed: false },
+      { name: "price", type: "int256", indexed: false },
+      { name: "decimals", type: "uint8", indexed: false },
+      { name: "fromChainlink", type: "bool", indexed: false },
+      { name: "size", type: "uint256", indexed: false },
+    ],
   },
 ] as const;
 

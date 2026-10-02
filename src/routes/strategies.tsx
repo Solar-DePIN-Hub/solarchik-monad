@@ -5,7 +5,7 @@ import { useConnection, usePublicClient, useReadContract, useReadContracts, useW
 import { ContractFields } from "@/components/contract-fields";
 import { useContracts, useHasCode } from "@/components/use-contracts";
 import { ensureMonadChain } from "@/components/wallet-button";
-import { addressUrl, decodeJsonUri, monadTestnet, strategyAbi } from "@/lib/chain";
+import { addressUrl, activeChain, decodeJsonUri, strategyAbi } from "@/lib/chain";
 import { useI18n } from "@/lib/i18n/provider";
 import { addTx } from "@/lib/storage";
 import { classifyTx, fill, type TxFail } from "@/lib/tx";
@@ -26,7 +26,7 @@ function StrategiesPage() {
   const pair = useContracts();
   const connection = useConnection();
   const code = useHasCode(pair.strategy);
-  const client = usePublicClient({ chainId: monadTestnet.id });
+  const client = usePublicClient({ chainId: activeChain.id });
   const write = useWriteContract();
   const [name, setName] = useState("");
   const [risk, setRisk] = useState<Risk>(2);
@@ -48,7 +48,7 @@ function StrategiesPage() {
     abi: strategyAbi,
     functionName: "tokensOfOwner",
     args: connection.address ? [connection.address] : undefined,
-    chainId: monadTestnet.id,
+    chainId: activeChain.id,
     query: { enabled },
   });
   const ids = owned.data ?? EMPTY_IDS;
@@ -58,7 +58,7 @@ function StrategiesPage() {
       abi: strategyAbi,
       functionName: "strategyOf" as const,
       args: [id] as const,
-      chainId: monadTestnet.id,
+      chainId: activeChain.id,
     })),
     query: { enabled: ids.length > 0 && Boolean(pair.strategy) },
   });
@@ -75,7 +75,7 @@ function StrategiesPage() {
     setStatus("pending");
     setNote("");
     try {
-      if (connection.chainId !== monadTestnet.id) await ensureMonadChain();
+      if (connection.chainId !== activeChain.id) await ensureMonadChain();
       const hash = await run();
       await client.waitForTransactionReceipt({ hash });
       addTx({ hash, at: Date.now(), kind, note: "" });
@@ -103,7 +103,7 @@ function StrategiesPage() {
           abi: strategyAbi,
           functionName: "mint",
           args: [name.trim(), risk],
-          chainId: monadTestnet.id,
+          chainId: activeChain.id,
         }),
       "minted",
       t.strategy.minted,
@@ -149,7 +149,7 @@ function StrategiesPage() {
         <button
           type="button"
           className="btn btn-ember btn-block mt-4"
-          disabled={!enabled || status === "pending" || connection.chainId !== monadTestnet.id}
+          disabled={!enabled || status === "pending" || connection.chainId !== activeChain.id}
           onClick={() => void onMint()}
         >
           {status === "pending" ? t.strategy.minting : t.strategy.mint}
@@ -222,7 +222,7 @@ function StrategiesPage() {
                               abi: strategyAbi,
                               functionName: "updateStrategy",
                               args: [id, draft.name.trim(), draft.risk],
-                              chainId: monadTestnet.id,
+                              chainId: activeChain.id,
                             }),
                           "updated",
                           t.strategy.updated,
@@ -258,7 +258,7 @@ function StrategiesPage() {
                               abi: strategyAbi,
                               functionName: "safeTransferFrom",
                               args: [connection.address!, draft.to as `0x${string}`, id],
-                              chainId: monadTestnet.id,
+                              chainId: activeChain.id,
                             }),
                           "sent",
                           t.strategy.sent,

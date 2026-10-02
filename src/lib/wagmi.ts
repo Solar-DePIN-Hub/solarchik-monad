@@ -1,11 +1,17 @@
 import { createConfig, http, injected } from "wagmi";
-import { monadTestnet } from "@/lib/chain";
+import { activeChain, arbitrumSepolia, monadTestnet } from "@/lib/chain";
+
+const chains =
+  activeChain.id === arbitrumSepolia.id
+    ? ([arbitrumSepolia, monadTestnet] as const)
+    : ([monadTestnet, arbitrumSepolia] as const);
 
 export const wagmiConfig = createConfig({
-  chains: [monadTestnet],
+  chains,
   connectors: [injected({ shimDisconnect: true })],
   transports: {
-    [monadTestnet.id]: http("https://testnet-rpc.monad.xyz"),
+    [monadTestnet.id]: http(monadTestnet.rpcUrls.default.http[0]),
+    [arbitrumSepolia.id]: http(arbitrumSepolia.rpcUrls.default.http[0]),
   },
   ssr: true,
 });
@@ -15,3 +21,4 @@ declare module "wagmi" {
     config: typeof wagmiConfig;
   }
 }
+

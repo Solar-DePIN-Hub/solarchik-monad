@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Wallet } from "lucide-react";
 import { formatUnits } from "viem";
 import { useBalance, useConnection, useConnect, useDisconnect, useSwitchChain } from "wagmi";
-import { FAUCET, MONAD_HEX, monadTestnet, shortAddress } from "@/lib/chain";
+import { activeChain, CHAIN_HEX, FAUCET, shortAddress } from "@/lib/chain";
 import { useI18n } from "@/lib/i18n/provider";
 
 type Provider = {
@@ -21,7 +21,7 @@ export async function ensureMonadChain() {
   try {
     await eth.request({
       method: "wallet_switchEthereumChain",
-      params: [{ chainId: MONAD_HEX }],
+      params: [{ chainId: CHAIN_HEX }],
     });
   } catch (err) {
     const code = (err as { code?: number }).code;
@@ -30,11 +30,11 @@ export async function ensureMonadChain() {
       method: "wallet_addEthereumChain",
       params: [
         {
-          chainId: MONAD_HEX,
-          chainName: "Monad Testnet",
-          nativeCurrency: { name: "MON", symbol: "MON", decimals: 18 },
-          rpcUrls: ["https://testnet-rpc.monad.xyz"],
-          blockExplorerUrls: ["https://testnet.monadexplorer.com"],
+          chainId: CHAIN_HEX,
+          chainName: activeChain.name,
+          nativeCurrency: activeChain.nativeCurrency,
+          rpcUrls: [activeChain.rpcUrls.default.http[0]],
+          blockExplorerUrls: [activeChain.blockExplorers.default.url],
         },
       ],
     });
@@ -49,13 +49,13 @@ export function WalletButton() {
   const switchChain = useSwitchChain();
   const balance = useBalance({
     address: connection.address,
-    chainId: monadTestnet.id,
+    chainId: activeChain.id,
     query: { enabled: Boolean(connection.address) },
   });
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
   const [copied, setCopied] = useState(false);
-  const wrong = connection.isConnected && connection.chainId !== monadTestnet.id;
+  const wrong = connection.isConnected && connection.chainId !== activeChain.id;
 
   async function onConnect() {
     setNote("");
@@ -68,7 +68,7 @@ export function WalletButton() {
     try {
       await connect.mutateAsync({ connector: connect.connectors[0]! });
       try {
-        await switchChain.mutateAsync({ chainId: monadTestnet.id });
+        await switchChain.mutateAsync({ chainId: activeChain.id });
       } catch {
         await ensureMonadChain();
       }
@@ -80,7 +80,7 @@ export function WalletButton() {
 
   async function onSwitch() {
     try {
-      await switchChain.mutateAsync({ chainId: monadTestnet.id });
+      await switchChain.mutateAsync({ chainId: activeChain.id });
     } catch {
       try {
         await ensureMonadChain();
@@ -116,9 +116,12 @@ export function WalletButton() {
             <>
               <p className="font-semibold">{shortAddress(connection.address)}</p>
               <p className="mt-1 text-ink-soft">
-                {t.wallet.balance}: {balance.data ? `${Number(formatUnits(balance.data.value, 18)).toFixed(3)} MON` : "—"}
+                {t.wallet.balance}:{" "}
+                {balance.data
+                  ? `${Number(formatUnits(balance.data.value, 18)).toFixed(3)} ${activeChain.nativeCurrency.symbol}`
+                  : "—"}
               </p>
-              {wrong ? <p className="mt-2 text-ember">{t.wallet.wrong}</p> : <p className="mt-2">Monad testnet</p>}
+              {wrong ? <p className="mt-2 text-ember">{t.wallet.wrong}</p> : <p className="mt-2">{activeChain.name}</p>}
               <div className="mt-3 flex flex-col gap-2">
                 {wrong ? (
                   <button type="button" className="btn btn-ember btn-block" onClick={() => void onSwitch()}>
@@ -135,6 +138,7 @@ export function WalletButton() {
                 >
                   {copied ? t.wallet.copied : t.wallet.copy}
                 </button>
+                <p className="text-ink-soft">{t.wallet.privyOff}</p>
                 <a className="btn btn-ghost btn-block" href={FAUCET} target="_blank" rel="noreferrer">
                   {t.home.faucet}
                 </a>
