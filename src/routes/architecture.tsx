@@ -29,7 +29,7 @@ const copy = {
       {
         n: "3",
         title: "Mint",
-        body: "The work desk mints four strategy NFTs: Bitcoin Windows #11 (crypto), Weather, Events Scout #04, and Combo. The player signs mint(name, risk). The name stores the window, for example Weather · 5m. Gas is the only cost. The contract does not charge 0.1 MON and does not place an order.",
+        body: "The work desk lists the same four agents as the original desk: Bitcoin Windows #11, Events Scout #04, Weather Station, and Combo Prime. Take and work signs mint on Monad testnet. Gas is the only cost. The contract does not charge 0.1 MON and does not place an order.",
       },
       {
         n: "4",
@@ -80,7 +80,7 @@ const copy = {
       {
         n: "3",
         title: "Мінт",
-        body: "Стіл мінтить чотири NFT стратегії: Bitcoin Windows #11 (крипта), Weather (погода), Events Scout #04 (події) і Combo (комбо). Гравець підписує mint(name, risk). У назві лежить вікно, наприклад Weather · 5m. Платиться лише газ. Контракт не бере 0.1 MON і не відкриває угоду.",
+        body: "Стіл показує ті самі чотири агенти, що й оригінал: Bitcoin Windows #11, Events Scout #04, Weather Station і Combo Prime. «Взяти і працювати» підписує mint на Monad testnet. Платиться лише газ. Контракт не бере 0.1 MON і не відкриває угоду.",
       },
       {
         n: "4",

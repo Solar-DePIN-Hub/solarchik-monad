@@ -7,7 +7,11 @@ export type CatalogAgent = {
   key: "btc11" | "weather" | "scout04" | "combo";
   title: string;
   chainName: string;
+  chainLabel: string;
   lane: "crypto" | "weather" | "events" | "combo";
+  classId: 1 | 3;
+  blurb: { uk: string; en: string };
+  status: { uk: string; en: string };
   market: string;
   risk: AgentRisk;
   windows: string;
@@ -18,17 +22,15 @@ export const CATALOG: CatalogAgent[] = [
     key: "btc11",
     title: "Bitcoin Windows #11",
     chainName: "Bitcoin Windows #11",
+    chainLabel: "Bitcoin Windows #11 · 15m",
     lane: "crypto",
+    classId: 1,
+    blurb: {
+      uk: "Біткоїн Up/Down лише 15 хв. Агент ставить від 65%.",
+      en: "Bitcoin Up/Down is 15 minutes only. The agent marks paper from 65%.",
+    },
+    status: { uk: "Крипто 15хв увімк", en: "Crypto 15m on" },
     market: "Crypto",
-    risk: 2,
-    windows: "15m",
-  },
-  {
-    key: "weather",
-    title: "Weather",
-    chainName: "Weather",
-    lane: "weather",
-    market: "Weather",
     risk: 1,
     windows: "15m",
   },
@@ -36,18 +38,51 @@ export const CATALOG: CatalogAgent[] = [
     key: "scout04",
     title: "Events Scout #04",
     chainName: "Events Scout #04",
+    chainLabel: "Events Scout #04 · 2d",
     lane: "events",
+    classId: 1,
+    blurb: {
+      uk: "Події не про біткоїн і не спорт. Горизонт до 2 діб. Агент від 65%.",
+      en: "Events are not bitcoin and not sport. Horizon up to 2 days. Paper from 65%.",
+    },
+    status: { uk: "Події 2д увімк", en: "Events 2d on" },
     market: "Events",
     risk: 1,
-    windows: "15m",
+    windows: "2d",
+  },
+  {
+    key: "weather",
+    title: "Weather Station",
+    chainName: "Weather Station",
+    chainLabel: "Weather Station",
+    lane: "weather",
+    classId: 1,
+    blurb: {
+      uk: "Денний high лише зі станції в правилах. Немає знятого high — ордера немає.",
+      en: "The daily high comes only from the station in the rules. No posted high means no order.",
+    },
+    status: { uk: "Погода увімк", en: "Weather on" },
+    market: "Weather",
+    risk: 1,
+    windows: "on",
   },
   {
     key: "combo",
-    title: "Combo",
-    chainName: "Combo",
+    title: "Combo Prime",
+    chainName: "Combo Prime",
+    chainLabel: "Combo Prime · 15m+events+weather",
     lane: "combo",
+    classId: 3,
+    blurb: {
+      uk: "Три смуги в одному NFT: крипто 15 хв, події, погода. Без угоди.",
+      en: "Three lanes in one NFT: crypto 15m, events, and weather. No order is sent.",
+    },
+    status: {
+      uk: "Крипто 15хв увімк · Події 2д увімк · Погода увімк",
+      en: "Crypto 15m on · Events 2d on · Weather on",
+    },
     market: "Combo",
-    risk: 2,
+    risk: 3,
     windows: "15m",
   },
 ];
@@ -122,6 +157,7 @@ export function parseStored(name: string): { key: CatalogAgent["key"]; windows: 
   else if (/10m/.test(name)) windows = "10m";
   else if (/(?:^|[^0-9])5m/.test(name)) windows = "5m";
   else if (/(?:^|[^0-9])1m/.test(name)) windows = "1m";
+  else if (card.key === "btc11") windows = "15m";
   return { key: card.key, windows };
 }
 

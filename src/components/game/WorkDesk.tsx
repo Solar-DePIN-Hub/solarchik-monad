@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, Mic } from "lucide-react";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
-import { activeChain, addressUrl, DEPLOYED, strategyAbi, txUrl } from "@/lib/chain";
+import { activeChain, DEPLOYED, strategyAbi, txUrl } from "@/lib/chain";
 import { ensureMonadChain } from "@/components/wallet-button";
 import { authorizeSuns, chainSuns, sessionAccount } from "@/lib/game/monadSuns";
 import { hearOnce, speakLocal, unlockAudio } from "@/lib/game/audio";
@@ -10,13 +10,11 @@ import {
   WINDOWS,
   catalogByKey,
   deskAnswer,
-  laneWord,
   parseStored,
   proposeWindow,
   readPending,
   readRun,
   riskWord,
-  strategyName,
   windowsPhrase,
   writePending,
   writeRun,
@@ -145,8 +143,8 @@ export function WorkDesk({
   async function getAgent(key: CatalogAgent["key"]) {
     const card = catalogByKey(key);
     if (!card || busy) return;
-    const windows = pick[key];
-    const chainName = strategyName(card, windows);
+    const windows = card.windows === "1m" || card.windows === "5m" || card.windows === "10m" || card.windows === "15m" ? card.windows : "15m";
+    const chainName = card.chainLabel;
     setBusy(key);
     setNote("");
     try {
@@ -327,125 +325,65 @@ export function WorkDesk({
   }
 
   return (
-    <div className="min-h-dvh overflow-y-auto bg-[#1b140c] px-4 pb-10 pt-4 text-[#f6e7c1]">
-      <button type="button" className="flex h-11 items-center gap-2 text-sm font-semibold" onClick={onBack}>
-        <ArrowLeft className="size-4" />
-        Yard
-      </button>
-      <p className="text-xs font-semibold tracking-wide text-[#e8b931]">Monad testnet · paper desk</p>
-      <h1 className="mt-1 font-display text-3xl">Work</h1>
-      <p className="mt-2 max-w-md text-sm text-[#d9c7a2]">
-        Same five strategy names as the Solarchik desk. Mint is a real ERC-721 on {DEPLOYED.strategy.slice(0, 6)}…{DEPLOYED.strategy.slice(-4)}. The contract does not take 0.1 MON and does not place an order.
-      </p>
-      <a className="mt-3 block text-sm font-semibold underline" href={addressUrl(DEPLOYED.strategy)} target="_blank" rel="noreferrer">
-        Strategy contract {DEPLOYED.strategy.slice(0, 6)}…{DEPLOYED.strategy.slice(-4)}
-      </a>
-      <button type="button" className="mt-3 h-11 rounded-md bg-[#e8b931] px-4 text-sm font-semibold text-[#1b140c]" onClick={() => void connect()}>
-        {account ? `Wallet ${account.slice(0, 6)}…${account.slice(-4)}` : "Connect Monad wallet"}
-      </button>
-
-      <section className="mt-4 rounded-lg bg-[#2a2118] p-4">
-        <h2 className="text-sm font-semibold">Suns on Monad</h2>
-        <p className="mt-1 text-xs text-[#d9c7a2]">
-          One signature funds a session key with 0.02 MON. After that, suns from the roof run are a real recordSuns transaction. The score on the yard stays on this device.
-        </p>
-        <p className="mt-2 text-sm">On chain: {chainTotal === null ? "—" : chainTotal}</p>
-        <p className="mt-1 break-all text-xs text-[#d9c7a2]">Session key: {session || "not created yet"}</p>
+    <div className="min-h-dvh overflow-y-auto bg-bg px-4 pb-10 pt-[max(0.75rem,env(safe-area-inset-top))] text-fg">
+      <div className="mx-auto flex max-w-lg items-start justify-between gap-3">
+        <div className="min-w-0">
+          <button type="button" className="mb-2 flex h-11 items-center gap-2 text-sm font-semibold" onClick={onBack}>
+            <ArrowLeft className="size-4" />
+            Yard
+          </button>
+          <p className="text-xs uppercase tracking-wide text-muted">
+            {uk ? "Соларчик · тестовий Monad" : "Solarchik · Monad testnet"}
+          </p>
+          <h1 className="font-display text-lg leading-tight">{uk ? "Робочий стіл" : "Work desk"}</h1>
+          <p className="mt-1 text-xs text-muted">Monad testnet · MetaMask · ERC-721</p>
+        </div>
         <button
           type="button"
-          disabled={busy !== ""}
-          className="mt-3 h-11 rounded-md bg-[#f6e7c1] px-3 text-sm font-semibold text-[#1b140c] disabled:opacity-60"
-          onClick={() => void allowSuns()}
+          className="mt-2 h-11 shrink-0 rounded-md border border-border bg-elevated px-3 text-xs font-semibold"
+          onClick={() => void connect()}
         >
-          {busy === "suns" ? "Signing…" : "Allow sun recording"}
+          {account ? `${account.slice(0, 6)}…${account.slice(-4)}` : uk ? "Гаманець" : "Wallet"}
         </button>
-      </section>
+      </div>
 
-      <section className="mt-4 rounded-lg bg-[#2a2118] p-4">
-        <h2 className="text-sm font-semibold">{uk ? "Паперовий гаманець · симуляція" : "Paper purse · simulated"}</h2>
-        <p className="mt-1 text-xs text-[#d9c7a2]">
-          {uk
-            ? "Агент лише записує намір. Ціни Chainlink на Monad testnet тут немає, тож угоду не відправлено."
-            : "The agent only records an intent. This app has no Chainlink price on Monad testnet, so no order is sent."}
-        </p>
-      </section>
-
-      <section className="mt-4 grid gap-2">
+      <ul className="mx-auto mt-4 grid max-w-lg gap-3">
         {CATALOG.map((item) => {
           const held = owned.find((token) => token.name.startsWith(item.chainName));
-          const stored = held ? parseStored(held.name) : null;
-          const live = run?.key === item.key && run.status === "running";
           return (
-            <article key={item.key} className="rounded-lg bg-[#2a2118] p-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold">
-                  {laneWord(item.lane, uk)} · {item.title}
-                </p>
-                <p className="text-xs text-[#e8b931]">
-                  {live ? (uk ? "Біжить" : "Running") : uk ? "Стоп" : "Stopped"}
-                  {" · "}
-                  {held ? (uk ? "Є NFT" : "Owned") : uk ? "Немає NFT" : "Not owned"}
-                </p>
+            <li key={item.key} className="rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs text-muted">{uk ? `Клас ${item.classId}` : `Class ${item.classId}`}</div>
+                  <h3 className="font-medium">{item.title}</h3>
+                  <p className="mt-1 text-sm text-muted">{uk ? item.blurb.uk : item.blurb.en}</p>
+                </div>
+                <div className="text-right text-sm">
+                  <div className="font-medium">{uk ? "безкоштовно" : "free"}</div>
+                  <div className="text-xs text-muted">{uk ? "лише комісія мережі" : "network fee only"}</div>
+                </div>
               </div>
-              <p className="mt-1 text-xs text-[#d9c7a2]">
-                {item.market} · {riskWord(item.risk, uk)} ·{" "}
-                {stored?.windows
-                  ? uk
-                    ? `у NFT ${windowsPhrase(stored.windows, true)}`
-                    : `on the NFT ${windowsPhrase(stored.windows, false)}`
-                  : uk
-                    ? "у NFT ще не записано"
-                    : "not stored on an NFT yet"}
-              </p>
-              <div className="mt-2 grid grid-cols-4 gap-1">
-                {WINDOWS.map((code) => (
-                  <button
-                    key={code}
-                    type="button"
-                    className={
-                      "h-8 rounded-md text-xs font-semibold " +
-                      (pick[item.key] === code ? "bg-[#e8b931] text-[#1b140c]" : "bg-[#1b140c]")
-                    }
-                    onClick={() => setPick((prev) => ({ ...prev, [item.key]: code }))}
-                  >
-                    {code.replace("m", uk ? " хв" : "m")}
-                  </button>
-                ))}
-              </div>
-              {live ? (
-                <button
-                  type="button"
-                  className="mt-3 h-10 w-full rounded-md border border-[#e8b931] text-sm font-semibold"
-                  onClick={() => stopAgent(item.key)}
-                >
-                  {uk ? "Пауза" : "Stop"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={busy !== ""}
-                  className="mt-3 h-10 w-full rounded-md bg-[#e8b931] text-sm font-semibold text-[#1b140c] disabled:opacity-60"
-                  onClick={() => void getAgent(item.key)}
-                >
-                  {busy === item.key
-                    ? uk
-                      ? "Підпис…"
-                      : "Signing…"
-                    : held
-                      ? uk
-                        ? "Записати стратегію"
-                        : "Record strategy"
-                      : uk
-                        ? "Замінтити NFT"
-                        : "Mint NFT"}
-                </button>
-              )}
-            </article>
+              <p className="mt-2 text-xs text-muted">{uk ? item.status.uk : item.status.en}</p>
+              {held ? (
+                <p className="mt-1 text-xs text-muted">
+                  {uk ? `NFT #${held.id} · ${held.name}` : `NFT #${held.id} · ${held.name}`}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                disabled={busy !== ""}
+                className="mt-3 h-11 w-full rounded-md bg-primary text-sm font-semibold text-primary-fg disabled:opacity-60"
+                onClick={() => void getAgent(item.key)}
+              >
+                {busy === item.key ? (uk ? "Підпис…" : "Signing…") : uk ? "Взяти і працювати" : "Take and work"}
+              </button>
+            </li>
           );
         })}
-      </section>
+      </ul>
 
-      <section className="mt-4 rounded-lg bg-[#2a2118] p-4">
+      <div className="mx-auto max-w-lg">
+      <section className="mt-4 rounded-lg bg-[#2a2118] p-4 text-[#f6e7c1]">
         <h2 className="text-sm font-semibold">{uk ? "Запитай агента" : "Ask the agent"}</h2>
         <p className="mt-1 text-xs text-[#d9c7a2]">
           {uk
@@ -550,6 +488,7 @@ export function WorkDesk({
           {hash}
         </a>
       ) : null}
+      </div>
     </div>
   );
 }
