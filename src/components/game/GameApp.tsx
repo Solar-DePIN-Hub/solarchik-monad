@@ -43,6 +43,7 @@ import { isLocale, makeT, type Locale } from "@/lib/game/i18n";
 import type { PetVibe, PetVoice } from "@/lib/game/pet";
 import { pullNativeInbox, setNativeScreening, isNativeApp, signClockIn } from "@/lib/game/buddyNet";
 import { signClockInMwa } from "@/lib/game/mwaWeb";
+import { recordRunSuns } from "@/lib/game/monadSuns";
 import { readMessage } from "@/lib/game/secretary";
 
 type Screen = "yard" | "run" | "shop" | "pet" | "work";
@@ -154,6 +155,7 @@ export function GameApp() {
   const commit = useCallback(
     (result: { score: number; suns: number; maxCombo: number; distance: number; didBonus: boolean }) => {
       setSave((prev) => (prev ? applyRun(prev, result) : prev));
+      if (result.suns > 0) void recordRunSuns(result.suns).catch(() => undefined);
     },
     [],
   );

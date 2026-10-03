@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { activeChain, addressUrl, DEPLOYED, strategyAbi, txUrl } from "@/lib/chain";
 import { ensureMonadChain } from "@/components/wallet-button";
+import { authorizeSuns, chainSuns, savedPlayer, sessionAccount } from "@/lib/game/monadSuns";
 import type { Locale } from "@/lib/game/i18n";
 
 type Eth = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
@@ -56,6 +57,8 @@ export function WorkDesk({
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
   const [hash, setHash] = useState("");
+  const [chainTotal, setChainTotal] = useState<number | null>(null);
+  const [session, setSession] = useState("");
 
   async function connect() {
     setNote("");
@@ -63,6 +66,8 @@ export function WorkDesk({
       const bag = await wallet();
       setAccount(bag.account);
       await load(bag.account, bag.reader);
+      setSession(sessionAccount().address);
+      setChainTotal(await chainSuns(bag.account));
     } catch (err) {
       setNote(err instanceof Error ? err.message.slice(0, 160) : "rejected");
     }
@@ -115,6 +120,24 @@ export function WorkDesk({
     }
   }
 
+  async function allowSuns() {
+    if (busy) return;
+    setBusy("suns");
+    setNote("");
+    try {
+      const proof = await authorizeSuns();
+      setAccount(proof.player);
+      setSession(proof.session);
+      setHash(proof.hash);
+      setChainTotal(await chainSuns(proof.player));
+      setNote("Session key funded with 0.02 MON. The next roof run can record up to 40 suns without another popup.");
+    } catch (err) {
+      setNote(err instanceof Error ? err.message.slice(0, 180) : "rejected");
+    } finally {
+      setBusy("");
+    }
+  }
+
   function runPaper() {
     const card = owned.find((item) => item.id === picked);
     if (!card) {
@@ -152,6 +175,23 @@ export function WorkDesk({
       <button type="button" className="mt-4 h-11 rounded-md bg-[#e8b931] px-4 text-sm font-semibold text-[#1b140c]" onClick={() => void connect()}>
         {account ? `${account.slice(0, 6)}…${account.slice(-4)}` : "Connect Monad wallet"}
       </button>
+
+      <section className="mt-4 rounded-lg bg-[#2a2118] p-4">
+        <h2 className="text-sm font-semibold">Suns on Monad</h2>
+        <p className="mt-1 text-xs text-[#d9c7a2]">
+          One signature funds a session key with 0.02 MON. After that, suns from the roof run are a real recordSuns transaction. The score on the yard stays on this device.
+        </p>
+        <p className="mt-2 text-sm">On chain: {chainTotal === null ? "—" : chainTotal}</p>
+        <p className="mt-1 break-all text-xs text-[#d9c7a2]">{session || savedPlayer() || "No session yet"}</p>
+        <button
+          type="button"
+          disabled={busy !== ""}
+          className="mt-3 h-11 rounded-md bg-[#f6e7c1] px-3 text-sm font-semibold text-[#1b140c] disabled:opacity-60"
+          onClick={() => void allowSuns()}
+        >
+          {busy === "suns" ? "Signing…" : "Allow sun recording"}
+        </button>
+      </section>
 
       <section className="mt-4 grid gap-2">
         {STRATEGIES.map((item) => (
