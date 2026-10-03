@@ -18,7 +18,7 @@ function SunMark() {
 export function Shell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useI18n();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const play = path === "/play";
+  const play = path === "/play" || path === "/";
   const items = [
     { to: "/", label: t.nav.home, icon: House, exact: true },
     { to: "/check-in", label: t.nav.streak, icon: Sun, exact: false },
@@ -60,6 +60,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </header>
       )}
       <main className={play ? "relative h-dvh" : "mx-auto w-full max-w-lg flex-1 px-4 pb-28"}>{children}</main>
+      {play ? null : (
       <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))]">
         <div className="glass dock pointer-events-auto w-full max-w-lg">
           {items.map((item) => {
@@ -84,6 +85,7 @@ export function Shell({ children }: { children: ReactNode }) {
           })}
         </div>
       </nav>
+      )}
     </div>
   );
 }

@@ -15,7 +15,7 @@ const empty: ContractPair = {
 };
 
 export function useContracts() {
-  const [pair, setPair] = useState<ContractPair>(empty);
+  const [pair, setPair] = useState<ContractPair>(() => readContracts());
   useEffect(() => {
     const pull = () => setPair(readContracts());
     pull();
