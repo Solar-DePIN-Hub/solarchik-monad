@@ -180,7 +180,13 @@ On Monad testnet (chain id 10143): SolarchikStreak.checkIn once per 24 hours. Th
 
 Not on-chain: the rooftop run and its suns (this device only), and Sol's replies when no model key is set (labeled offline demo).
 
-Demo: open the app in a browser with a wallet. Run the roofs with no wallet. Switch to Monad testnet, get testnet MON from the faucet, check in once, and mint a strategy NFT. If the two contract addresses are not set, deploy contracts/ with Foundry and paste them on the project profile page.
+Demo: open the app in a browser with a wallet. Run the roofs with no wallet. Switch to Monad testnet, get testnet MON from the faucet, check in once, and mint a strategy NFT.
+
+Contracts, already on Monad testnet:
+Streak https://testnet.monadexplorer.com/address/0x357c1a631f208FBB84d430bd18FEE65B54456a38
+Strategy https://testnet.monadexplorer.com/address/0xDfdd6b3402180316D780d7634624d09b9026Fb42
+Suns https://testnet.monadexplorer.com/address/0x060961d6495811582C886DB14B9F5cE6271fF3d6
+Agent https://testnet.monadexplorer.com/address/0xb18cad14A950CD4cB7EEC936FE8843ef38eB6cDE
 
 Code: https://github.com/Solar-DePIN-Hub/solarchik-monad
 The Solana Mobile app is a different program and is not this submission.
@@ -205,7 +211,7 @@ Deadline: 13 October 2026, 11:59 PM ET. Submit at https://hackathon.monad.xyz`,
     faucet: "Faucet",
     deployTitle: "Deploy",
     deployBody:
-      "Source and a Foundry script are in the project contracts folder. Install forge-std, test, then broadcast Deploy. Paste the addresses below or set VITE_STREAK_ADDRESS, VITE_STRATEGY_ADDRESS, VITE_SUNS_ADDRESS, and VITE_AGENT_ADDRESS before the next build. Leave CHAINLINK_FEED unset on Monad testnet.",
+      "These four contracts are already on Monad testnet. The app uses the addresses below. Leave CHAINLINK_FEED unset. Kuru stays labelled simulation until a wallet signs a swap.",
     warn: "Testnet only. Not financial advice.",
     original: "Not this submission · Solana Mobile",
     pasteHint: "Addresses used by this preview",

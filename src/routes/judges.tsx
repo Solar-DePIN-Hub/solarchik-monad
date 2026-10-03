@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ContractFields } from "@/components/contract-fields";
-import { EXPLORER, FAUCET, HACKATHON, MONAD_REPO, ORIGINAL_REPO, activeChain } from "@/lib/chain";
+import { EXPLORER, FAUCET, HACKATHON, MONAD_REPO, ORIGINAL_REPO, DEPLOYED, addressUrl, activeChain } from "@/lib/chain";
 import { useI18n } from "@/lib/i18n/provider";
 
 export const Route = createFileRoute("/judges")({ component: JudgesPage });
@@ -139,6 +139,28 @@ function JudgesPage() {
       </section>
       <div>
         <p className="mb-2 text-sm font-semibold">{t.judges.pasteHint}</p>
+        <ul className="mb-3 space-y-1 text-sm font-semibold">
+          <li>
+            <a href={addressUrl(DEPLOYED.streak)} target="_blank" rel="noreferrer">
+              Streak {DEPLOYED.streak}
+            </a>
+          </li>
+          <li>
+            <a href={addressUrl(DEPLOYED.strategy)} target="_blank" rel="noreferrer">
+              Strategy {DEPLOYED.strategy}
+            </a>
+          </li>
+          <li>
+            <a href={addressUrl(DEPLOYED.suns)} target="_blank" rel="noreferrer">
+              Suns {DEPLOYED.suns}
+            </a>
+          </li>
+          <li>
+            <a href={addressUrl(DEPLOYED.agent)} target="_blank" rel="noreferrer">
+              Agent {DEPLOYED.agent}
+            </a>
+          </li>
+        </ul>
         <ContractFields />
       </div>
 
