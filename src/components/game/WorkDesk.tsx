@@ -4,6 +4,19 @@ import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { activeChain, addressUrl, DEPLOYED, strategyAbi, txUrl } from "@/lib/chain";
 import { ensureMonadChain } from "@/components/wallet-button";
 import { authorizeSuns, chainSuns, sessionAccount } from "@/lib/game/monadSuns";
+import {
+  CATALOG,
+  agentAnswer,
+  catalogByKey,
+  readPending,
+  readRun,
+  riskWord,
+  writePending,
+  writeRun,
+  type AgentRun,
+  type CatalogAgent,
+  type PendingChange,
+} from "@/lib/game/paperAgents";
 import type { Locale } from "@/lib/game/i18n";
 
 type Eth = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
@@ -18,20 +31,6 @@ const STRATEGIES = [
 
 type Owned = { id: string; name: string; risk: number; lockedUntil: number };
 
-type PaperRow = { id: string; name: string; move: string; size: string; at: number };
-
-const PAPER_KEY = "solarchik.work.paper";
-
-function readPaper(): PaperRow[] {
-  try {
-    const raw = localStorage.getItem(PAPER_KEY);
-    const parsed = raw ? (JSON.parse(raw) as PaperRow[]) : [];
-    return Array.isArray(parsed) ? parsed.slice(0, 12) : [];
-  } catch {
-    return [];
-  }
-}
-
 async function wallet() {
   const eth = (window as Window & { ethereum?: Eth }).ethereum;
   if (!eth) throw new Error("Connect MetaMask");
@@ -45,20 +44,26 @@ async function wallet() {
 }
 
 export function WorkDesk({
+  locale,
   onBack,
 }: {
   locale: Locale;
   onBack: () => void;
 }) {
+  const uk = locale === "uk";
   const [account, setAccount] = useState("");
   const [owned, setOwned] = useState<Owned[]>([]);
-  const [picked, setPicked] = useState("");
-  const [rows, setRows] = useState<PaperRow[]>(() => (typeof localStorage === "undefined" ? [] : readPaper()));
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
   const [hash, setHash] = useState("");
   const [chainTotal, setChainTotal] = useState<number | null>(null);
   const [session, setSession] = useState("");
+  const [run, setRun] = useState<AgentRun | null>(() => (typeof localStorage === "undefined" ? null : readRun()));
+  const [pending, setPending] = useState<PendingChange | null>(() =>
+    typeof localStorage === "undefined" ? null : readPending(),
+  );
+  const [draft, setDraft] = useState("");
+  const [said, setSaid] = useState("");
 
   async function connect() {
     setNote("");
@@ -91,7 +96,6 @@ export function WorkDesk({
       next.push({ id: id.toString(), name: row[0], risk: Number(row[1]), lockedUntil: Number(row[2]) });
     }
     setOwned(next);
-    if (!picked && next[0]) setPicked(next[0].id);
   }
 
   async function mint(name: string, risk: 1 | 2 | 3) {
@@ -138,23 +142,127 @@ export function WorkDesk({
     }
   }
 
-  function runPaper() {
-    const card = owned.find((item) => item.id === picked);
-    if (!card) {
-      setNote("Mint a strategy first. The paper row needs a token that is already on Monad.");
+  function remember(next: AgentRun | null) {
+    writeRun(next);
+    setRun(next);
+  }
+
+  async function getAgent(key: CatalogAgent["key"]) {
+    const card = catalogByKey(key);
+    if (!card || busy) return;
+    setBusy(key);
+    setNote("");
+    try {
+      const bag = await wallet();
+      setAccount(bag.account);
+      await load(bag.account, bag.reader);
+      let token = (await tokens(bag.account, bag.reader)).find((item) => item.name.startsWith(card.chainName));
+      if (!token) {
+        const tx = await bag.client.writeContract({
+          address: DEPLOYED.strategy,
+          abi: strategyAbi,
+          functionName: "mint",
+          args: [card.chainName, card.risk],
+          account: bag.account,
+          chain: activeChain,
+        });
+        const receipt = await bag.reader.waitForTransactionReceipt({ hash: tx });
+        setHash(tx);
+        if (receipt.status !== "success") throw new Error("Mint reverted");
+        token = (await tokens(bag.account, bag.reader)).find((item) => item.name.startsWith(card.chainName));
+        await load(bag.account, bag.reader);
+      }
+      if (!token) throw new Error("Mint did not return a token");
+      remember({ key: card.key, tokenId: token.id, status: "running", windows: card.windows, risk: card.risk });
+      setNote(
+        uk
+          ? `${card.title} запущено на папері. Угоду не відправлено.`
+          : `${card.title} started on paper. No order was sent.`,
+      );
+    } catch (err) {
+      setNote(err instanceof Error ? err.message.slice(0, 180) : "rejected");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  function stopAgent(key: CatalogAgent["key"]) {
+    if (!run || run.key !== key) return;
+    remember({ ...run, status: "stopped" });
+    setNote(uk ? "Агент на паузі. Угоду не відправлено." : "Agent is paused. No order was sent.");
+  }
+
+  function askAgent() {
+    const text = draft.trim();
+    if (!text) return;
+    const answer = agentAnswer(text, locale);
+    setDraft("");
+    if (!answer) {
+      setSaid(
+        uk
+          ? "Питай, яка стратегія біжить, або попроси вікна на 5 хвилин."
+          : "Ask what strategy is running, or ask for 5-minute windows.",
+      );
       return;
     }
-    const row: PaperRow = {
-      id: card.id,
-      name: card.name,
-      move: "SKIP",
-      size: "0",
-      at: Date.now(),
-    };
-    const next = [row, ...rows].slice(0, 12);
-    setRows(next);
-    localStorage.setItem(PAPER_KEY, JSON.stringify(next));
-    setNote("Paper tick only. Price feed is not Chainlink on Monad testnet, so no position was opened and nothing was sent.");
+    setSaid(answer.text);
+    if (answer.pending) setPending(answer.pending);
+  }
+
+  async function confirmChange() {
+    if (!pending || busy) return;
+    setBusy("confirm");
+    setNote("");
+    try {
+      const bag = await wallet();
+      setAccount(bag.account);
+      const tx = await bag.client.writeContract({
+        address: DEPLOYED.strategy,
+        abi: strategyAbi,
+        functionName: "updateStrategy",
+        args: [BigInt(pending.tokenId), pending.chainName, pending.risk],
+        account: bag.account,
+        chain: activeChain,
+      });
+      const receipt = await bag.reader.waitForTransactionReceipt({ hash: tx });
+      setHash(tx);
+      if (receipt.status !== "success") throw new Error("Update reverted");
+      if (run && run.tokenId === pending.tokenId) {
+        remember({ ...run, windows: pending.windows, risk: pending.risk, status: "running" });
+      }
+      writePending(null);
+      setPending(null);
+      await load(bag.account, bag.reader);
+      setNote(
+        uk
+          ? "Стратегію записано в NFT. Продаж заблоковано на 240 годин. Угоду не відправлено."
+          : "Strategy written to the NFT. Transfers stay locked for 240 hours. No order was sent.",
+      );
+    } catch (err) {
+      setNote(err instanceof Error ? err.message.slice(0, 180) : "rejected");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function tokens(owner: `0x${string}`, reader: ReturnType<typeof createPublicClient>) {
+    const ids = (await reader.readContract({
+      address: DEPLOYED.strategy,
+      abi: strategyAbi,
+      functionName: "tokensOfOwner",
+      args: [owner],
+    })) as bigint[];
+    const next: Owned[] = [];
+    for (const id of ids) {
+      const row = (await reader.readContract({
+        address: DEPLOYED.strategy,
+        abi: strategyAbi,
+        functionName: "strategyOf",
+        args: [id],
+      })) as readonly [string, number, bigint, bigint];
+      next.push({ id: id.toString(), name: row[0], risk: Number(row[1]), lockedUntil: Number(row[2]) });
+    }
+    return next;
   }
 
   return (
@@ -192,6 +300,112 @@ export function WorkDesk({
         </button>
       </section>
 
+      <section className="mt-4 rounded-lg bg-[#2a2118] p-4">
+        <h2 className="text-sm font-semibold">{uk ? "Паперовий гаманець · симуляція" : "Paper purse · simulated"}</h2>
+        <p className="mt-1 text-xs text-[#d9c7a2]">
+          {uk
+            ? "Агент лише записує намір. Ціни Chainlink на Monad testnet тут немає, тож угоду не відправлено."
+            : "The agent only records an intent. This app has no Chainlink price on Monad testnet, so no order is sent."}
+        </p>
+      </section>
+
+      <section className="mt-4 grid gap-2">
+        {CATALOG.map((item) => {
+          const held = owned.find((token) => token.name.startsWith(item.chainName) || (run?.key === item.key && token.id === run.tokenId));
+          const live = run?.key === item.key && run.status === "running";
+          return (
+            <article key={item.key} className="rounded-lg bg-[#2a2118] p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold">{item.title}</p>
+                <p className="text-xs text-[#e8b931]">
+                  {live ? (uk ? "Біжить" : "Running") : uk ? "Стоп" : "Stopped"}
+                  {" · "}
+                  {held ? (uk ? "Є NFT" : "Owned") : uk ? "Немає NFT" : "Not owned"}
+                </p>
+              </div>
+              <p className="mt-1 text-xs text-[#d9c7a2]">
+                {item.market} · {riskWord(item.risk, uk)} · {uk ? "папір" : "paper"}
+              </p>
+              {live ? (
+                <button
+                  type="button"
+                  className="mt-3 h-10 w-full rounded-md border border-[#e8b931] text-sm font-semibold"
+                  onClick={() => stopAgent(item.key)}
+                >
+                  {uk ? "Пауза" : "Stop"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy !== ""}
+                  className="mt-3 h-10 w-full rounded-md bg-[#e8b931] text-sm font-semibold text-[#1b140c] disabled:opacity-60"
+                  onClick={() => void getAgent(item.key)}
+                >
+                  {busy === item.key ? (uk ? "Підпис…" : "Signing…") : held ? (uk ? "Запустити" : "Start") : uk ? "Взяти агента" : "Get this agent"}
+                </button>
+              )}
+            </article>
+          );
+        })}
+      </section>
+
+      <section className="mt-4 rounded-lg bg-[#2a2118] p-4">
+        <h2 className="text-sm font-semibold">{uk ? "Запитай агента" : "Ask the agent"}</h2>
+        <p className="mt-1 text-xs text-[#d9c7a2]">
+          {uk ? "«Яка моя стратегія?» або «зміни на 5 хвилин»." : "“What is my strategy?” or “change it to 5 minutes.”"}
+        </p>
+        <form
+          className="mt-3 flex gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            askAgent();
+          }}
+        >
+          <input
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            className="h-11 min-w-0 flex-1 rounded-md bg-[#1b140c] px-3 text-sm"
+            placeholder={uk ? "Напиши агенту" : "Message the agent"}
+          />
+          <button type="submit" className="h-11 rounded-md bg-[#f6e7c1] px-3 text-sm font-semibold text-[#1b140c]">
+            {uk ? "Далі" : "Send"}
+          </button>
+        </form>
+        {said ? <p className="mt-3 text-sm">{said}</p> : null}
+        {pending ? (
+          <div className="mt-3 rounded-md bg-[#1b140c] p-3">
+            <p className="text-sm font-semibold">
+              {uk ? "Картка підтвердження" : "Confirmation card"}
+            </p>
+            <p className="mt-1 text-xs text-[#d9c7a2]">
+              {uk
+                ? `Записати «${pending.chainName}» у NFT #${pending.tokenId}. Продаж блокується на 240 годин. Угоди немає.`
+                : `Write “${pending.chainName}” onto NFT #${pending.tokenId}. Transfers lock for 240 hours. No trade.`}
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                disabled={busy !== ""}
+                className="h-10 rounded-md bg-[#e8b931] px-3 text-sm font-semibold text-[#1b140c] disabled:opacity-60"
+                onClick={() => void confirmChange()}
+              >
+                {busy === "confirm" ? (uk ? "Підпис…" : "Signing…") : uk ? "Підписати зміну" : "Sign the change"}
+              </button>
+              <button
+                type="button"
+                className="h-10 rounded-md px-3 text-sm font-semibold"
+                onClick={() => {
+                  writePending(null);
+                  setPending(null);
+                }}
+              >
+                {uk ? "Скасувати" : "Cancel"}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
       <section className="mt-4 grid gap-2">
         {STRATEGIES.map((item) => (
           <article key={item.name} className="flex items-center justify-between gap-3 rounded-lg bg-[#2a2118] p-3">
@@ -214,33 +428,15 @@ export function WorkDesk({
       </section>
 
       <section className="mt-4 rounded-lg bg-[#2a2118] p-4">
-        <h2 className="text-sm font-semibold">On this wallet</h2>
-        {owned.length === 0 ? <p className="mt-2 text-sm text-[#d9c7a2]">No strategy NFT yet.</p> : null}
+        <h2 className="text-sm font-semibold">{uk ? "На цьому гаманці" : "On this wallet"}</h2>
+        {owned.length === 0 ? (
+          <p className="mt-2 text-sm text-[#d9c7a2]">{uk ? "NFT стратегії ще немає. Підключи гаманець." : "No strategy NFT yet. Connect the wallet."}</p>
+        ) : null}
         <ul className="mt-2 space-y-2">
           {owned.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className={
-                  "w-full rounded-md px-3 py-2 text-left text-sm " +
-                  (picked === item.id ? "bg-[#e8b931] text-[#1b140c]" : "bg-[#1b140c]")
-                }
-                onClick={() => setPicked(item.id)}
-              >
-                #{item.id} {item.name} · risk {item.risk}
-                {item.lockedUntil * 1000 > Date.now() ? " · transfer locked" : ""}
-              </button>
-            </li>
-          ))}
-        </ul>
-        <button type="button" className="mt-3 h-11 w-full rounded-md border border-[#e8b931] text-sm font-semibold" onClick={runPaper}>
-          Run one paper tick
-        </button>
-        <p className="mt-2 text-xs text-[#d9c7a2]">The tick stays in this browser. It is not a transaction.</p>
-        <ul className="mt-3 space-y-1 text-sm">
-          {rows.map((row) => (
-            <li key={`${row.at}-${row.id}`}>
-              #{row.id} {row.name} · {row.move}
+            <li key={item.id} className="rounded-md bg-[#1b140c] px-3 py-2 text-sm">
+              #{item.id} {item.name} · {riskWord(item.risk === 1 || item.risk === 3 ? item.risk : 2, uk)}
+              {item.lockedUntil * 1000 > Date.now() ? (uk ? " · продаж заблоковано" : " · transfer locked") : ""}
             </li>
           ))}
         </ul>

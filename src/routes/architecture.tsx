@@ -29,7 +29,7 @@ const copy = {
       {
         n: "3",
         title: "Mint",
-        body: "The work desk mints one of five names: combo-free, desk-free, pred-free, combo-pro, desk-pro. The player signs mint(name, risk). Gas is the only cost. The contract does not charge 0.1 MON and does not limit one free mint per wallet.",
+        body: "The work desk mints combo-free, desk-free, pred-free, combo-pro, desk-pro, plus Bitcoin Windows #11 and Events Scout #04. The player signs mint(name, risk). Gas is the only cost. The contract does not charge 0.1 MON and does not place an order.",
       },
       {
         n: "4",
@@ -39,7 +39,7 @@ const copy = {
       {
         n: "5",
         title: "Desk shift",
-        body: "A paper tick stays in the browser. Monad testnet has no Chainlink feed in this app, so the desk does not open a position and does not send an order. The 5% fee ledger from the old diagram is not a contract here.",
+        body: "Start and stop stay in the browser. Asking for 5-minute windows shows a confirmation card, and signing it calls updateStrategy on that NFT, which locks transfers for 240 hours. Monad testnet has no Chainlink feed in this app, so the desk does not open a position and does not send an order.",
       },
       {
         n: "6",
@@ -80,7 +80,7 @@ const copy = {
       {
         n: "3",
         title: "Мінт",
-        body: "Стіл мінтить одну з п’яти назв: combo-free, desk-free, pred-free, combo-pro, desk-pro. Гравець підписує mint(name, risk). Платиться лише газ. Контракт не бере 0.1 MON і не обмежує один безкоштовний мінт на гаманець.",
+        body: "Стіл мінтить combo-free, desk-free, pred-free, combo-pro, desk-pro, а також Bitcoin Windows #11 і Events Scout #04. Гравець підписує mint(name, risk). Платиться лише газ. Контракт не бере 0.1 MON і не відкриває угоду.",
       },
       {
         n: "4",
@@ -90,7 +90,7 @@ const copy = {
       {
         n: "5",
         title: "Зміна столу",
-        body: "Паперовий тік лишається в браузері. На Monad testnet у цьому застосунку немає фіда Chainlink, тому стіл не відкриває позицію і не шле ордер. Книги комісії 5% зі старої схеми тут немає.",
+        body: "Старт і пауза лишаються в браузері. Прохання про вікна на 5 хвилин показує картку, і підпис кличе updateStrategy на цьому NFT: продаж блокується на 240 годин. Фіда Chainlink на Monad testnet у цьому застосунку немає, тож стіл не відкриває позицію і не шле ордер.",
       },
       {
         n: "6",
@@ -153,7 +153,7 @@ function ArchitecturePage() {
           ))}
         </ul>
         <p className="mt-3 font-semibold">{t.device}</p>
-        <p className="mt-1 text-ink-soft">{lang === "en" ? "Roof score, suns before a session, paper tick, offline Sol." : "Рахунок забігу, сонця до сесії, паперовий тік, Сол без ключа."}</p>
+        <p className="mt-1 text-ink-soft">{lang === "en" ? "Roof score, suns before a session, agent start and stop, Sol when no model key is set." : "Рахунок забігу, сонця до сесії, старт і пауза агента, Сол без ключа."}</p>
         <p className="mt-3 font-semibold">{t.absent}</p>
         <p className="mt-1 text-ink-soft">{lang === "en" ? "APK, Solana, Jupiter, Phantom, phone secretary, 0.1 MON pro mint, Kuru order." : "APK, Solana, Jupiter, Phantom, телефонний секретар, pro-мінт за 0.1 MON, ордер Kuru."}</p>
       </section>

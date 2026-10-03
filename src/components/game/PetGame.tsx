@@ -18,6 +18,7 @@ import {
   type PetVoice,
 } from "@/lib/game/pet";
 import { liveAsk, liveHear, liveSpeak, canNativeListen, nativeListen, nativeStopListen } from "@/lib/game/buddyNet";
+import { agentAnswer } from "@/lib/game/paperAgents";
 import { errKey, failOf } from "@/lib/game/netErr";
 import type { Locale, MsgKey, TFunc } from "@/lib/game/i18n";
 import { play, unlockAudio, speakLocal, stopLocalVoice, isVoiceOn, setVoiceOn, playVoiceB64 } from "@/lib/game/audio";
@@ -199,6 +200,14 @@ export function PetGame({ save, t, now: nowProp, onBack, onSetup, onChat, onSecr
     setSending(true);
     setChatNote("");
     try {
+      const local = agentAnswer(clean, save.locale);
+      if (local) {
+        onChat(clean, local.text);
+        play("collect");
+        setChatNote(save.locale === "uk" ? "Папір. Угоду не відправлено." : "Paper only. No order was sent.");
+        void speak(local.text);
+        return;
+      }
       const res = await liveAsk({
         name: pet.name,
         vibe: pet.vibe,
