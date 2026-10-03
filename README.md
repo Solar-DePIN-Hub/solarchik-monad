@@ -6,6 +6,15 @@ Metropolis submission. **Not** the Solana Mobile app in [Solar-DePIN-Hub/Solarch
 **Chain:** Monad testnet, id `10143`  
 **Deadline:** 13 October 2026, 11:59 PM ET, at [hackathon.monad.xyz](https://hackathon.monad.xyz)
 
+Deployed 2026-10-03 on Monad testnet from `0x148c10bC74cC3cFb8F99d48DeA90cbF7897Cc2e1`:
+
+- Streak: https://testnet.monadexplorer.com/address/0x357c1a631f208FBB84d430bd18FEE65B54456a38
+- Strategy: https://testnet.monadexplorer.com/address/0xDfdd6b3402180316D780d7634624d09b9026Fb42
+- Suns: https://testnet.monadexplorer.com/address/0x060961d6495811582C886DB14B9F5cE6271fF3d6
+- Agent: https://testnet.monadexplorer.com/address/0xb18cad14A950CD4cB7EEC936FE8843ef38eB6cDE
+
+Deploy txs: `0x8ab779b5aaa6d12fcbc911031b95909a81d5291952264c658528509391f3a9c7`, `0x91115427deef5cbde479680a01be98bfdf7695a1a77e533285bb97c103ca730c`, `0x28bfab553cf55f8dfc0d28df0f85edacabaadc283e5bda949fdbf3d4402aa657`, `0x29e653a6e29b78ead753c9a2df46d27fb61589cb88376bc027e2f373437dd058`.
+
 A daily check-in and a rooftop run. Strategy NFTs are a paper label, not a trade.
 
 ## What is on Monad

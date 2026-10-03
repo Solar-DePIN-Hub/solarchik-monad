@@ -46,6 +46,14 @@ export const HACKATHON = "https://hackathon.monad.xyz";
 /** Separate program. Do not submit it as the Metropolis project. */
 export const ORIGINAL_REPO = "https://github.com/Solar-DePIN-Hub/Solarchik";
 
+/** Deployed 2026-10-03 from 0x148c10bC74cC3cFb8F99d48DeA90cbF7897Cc2e1 on chain 10143. */
+export const DEPLOYED = {
+  streak: "0x357c1a631f208FBB84d430bd18FEE65B54456a38",
+  strategy: "0xDfdd6b3402180316D780d7634624d09b9026Fb42",
+  suns: "0x060961d6495811582C886DB14B9F5cE6271fF3d6",
+  agent: "0xb18cad14A950CD4cB7EEC936FE8843ef38eB6cDE",
+} as const;
+
 export function txUrl(hash: string) {
   return `${EXPLORER}/tx/${hash}`;
 }

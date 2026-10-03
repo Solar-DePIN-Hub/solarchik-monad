@@ -1,4 +1,4 @@
-import { parseAddress } from "@/lib/chain";
+import { DEPLOYED, parseAddress } from "@/lib/chain";
 
 export type TxKind = "check-in" | "mint" | "update" | "transfer" | "sun" | "agent";
 
@@ -116,7 +116,11 @@ function envAddress(
   key: "VITE_STREAK_ADDRESS" | "VITE_STRATEGY_ADDRESS" | "VITE_SUNS_ADDRESS" | "VITE_AGENT_ADDRESS",
 ) {
   const value = import.meta.env[key];
-  return typeof value === "string" ? value : undefined;
+  if (typeof value === "string" && value.trim()) return value;
+  if (key === "VITE_STREAK_ADDRESS") return DEPLOYED.streak;
+  if (key === "VITE_STRATEGY_ADDRESS") return DEPLOYED.strategy;
+  if (key === "VITE_SUNS_ADDRESS") return DEPLOYED.suns;
+  return DEPLOYED.agent;
 }
 
 function resolveOne(
