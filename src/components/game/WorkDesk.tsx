@@ -6,11 +6,14 @@ import { ensureMonadChain } from "@/components/wallet-button";
 import { authorizeSuns, chainSuns, sessionAccount } from "@/lib/game/monadSuns";
 import {
   CATALOG,
+  WINDOWS,
   agentAnswer,
   catalogByKey,
+  proposeWindow,
   readPending,
   readRun,
   riskWord,
+  windowsPhrase,
   writePending,
   writeRun,
   type AgentRun,
@@ -200,8 +203,8 @@ export function WorkDesk({
     if (!answer) {
       setSaid(
         uk
-          ? "Питай, яка стратегія біжить, або попроси вікна на 5 хвилин."
-          : "Ask what strategy is running, or ask for 5-minute windows.",
+          ? "Питай, яка стратегія біжить, або постав вікно: 1, 5, 10 чи 15 хвилин."
+          : "Ask what strategy is running, or set a 1, 5, 10, or 15 minute window.",
       );
       return;
     }
@@ -324,7 +327,7 @@ export function WorkDesk({
                 </p>
               </div>
               <p className="mt-1 text-xs text-[#d9c7a2]">
-                {item.market} · {riskWord(item.risk, uk)} · {uk ? "папір" : "paper"}
+                {item.market} · {riskWord(item.risk, uk)} · {live && run ? windowsPhrase(run.windows, uk) : uk ? "папір" : "paper"}
               </p>
               {live ? (
                 <button
@@ -352,8 +355,26 @@ export function WorkDesk({
       <section className="mt-4 rounded-lg bg-[#2a2118] p-4">
         <h2 className="text-sm font-semibold">{uk ? "Запитай агента" : "Ask the agent"}</h2>
         <p className="mt-1 text-xs text-[#d9c7a2]">
-          {uk ? "«Яка моя стратегія?» або «зміни на 5 хвилин»." : "“What is my strategy?” or “change it to 5 minutes.”"}
+          {uk
+            ? "«Яка моя стратегія?» або «зміни на 1 / 5 / 10 / 15 хвилин»."
+            : "“What is my strategy?” or “change it to 1, 5, 10, or 15 minutes.”"}
         </p>
+        <div className="mt-3 grid grid-cols-4 gap-2">
+          {WINDOWS.map((code) => (
+            <button
+              key={code}
+              type="button"
+              className="h-10 rounded-md bg-[#1b140c] text-sm font-semibold"
+              onClick={() => {
+                const answer = proposeWindow(code, locale);
+                setSaid(answer.text);
+                if (answer.pending) setPending(answer.pending);
+              }}
+            >
+              {code.replace("m", uk ? " хв" : " min")}
+            </button>
+          ))}
+        </div>
         <form
           className="mt-3 flex gap-2"
           onSubmit={(event) => {

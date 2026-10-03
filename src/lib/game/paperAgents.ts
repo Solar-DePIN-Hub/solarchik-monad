@@ -1,5 +1,8 @@
 export type AgentRisk = 1 | 2 | 3;
 
+export const WINDOWS = ["1m", "5m", "10m", "15m"] as const;
+export type WindowCode = (typeof WINDOWS)[number];
+
 export type CatalogAgent = {
   key: "btc11" | "scout04";
   title: string;
@@ -16,7 +19,7 @@ export const CATALOG: CatalogAgent[] = [
     chainName: "Bitcoin Windows #11",
     market: "BTC 15m",
     risk: 2,
-    windows: "15m+1h",
+    windows: "15m",
   },
   {
     key: "scout04",
@@ -24,7 +27,7 @@ export const CATALOG: CatalogAgent[] = [
     chainName: "Events Scout #04",
     market: "Events",
     risk: 1,
-    windows: "1h",
+    windows: "15m",
   },
 ];
 
@@ -89,27 +92,29 @@ export function riskWord(risk: AgentRisk, uk: boolean) {
   return uk ? "збалансований" : "balanced";
 }
 
-function windowsPhrase(windows: string, uk: boolean) {
+export function windowsPhrase(windows: string, uk: boolean) {
+  if (windows === "1m") return uk ? "1 хвилина" : "1-minute markets";
   if (windows === "5m") return uk ? "5 хвилин" : "5-minute markets";
+  if (windows === "10m") return uk ? "10 хвилин" : "10-minute markets";
+  if (windows === "15m") return uk ? "15 хвилин" : "15-minute markets";
   if (windows === "15m+1h") return uk ? "вікна 15 хвилин і 1 година" : "15-minute and 1-hour markets";
   if (windows === "1h") return uk ? "вікно 1 година" : "1-hour markets";
   return windows;
 }
 
-function wantsStrategy(text: string) {
-  return /what(?:'s| is) my strategy|my strategy|which agent|яка (?:моя )?стратег|моя стратегія|що за стратегі/i.test(text);
+function askedWindow(text: string): WindowCode | null {
+  const t = text.toLowerCase();
+  let code: WindowCode | null = null;
+  if (/15\s*(m\b|min|minute|хв)|fifteen|п.?ятнадцять/.test(t)) code = "15m";
+  else if (/10\s*(m\b|min|minute|хв)|ten\s*minute|десять/.test(t)) code = "10m";
+  else if (/(?:^|[^0-9])5\s*(m\b|min|minute|хв)|five\s*minute|п.?ять/.test(t)) code = "5m";
+  else if (/(?:^|[^0-9])1\s*(m\b|min|minute|хв)|one\s*minute|одн[аеу]/.test(t)) code = "1m";
+  if (!code) return null;
+  if (/change|set|switch|window|market|змін|постав|зроби|вікн|хв|min|minute/.test(t)) return code;
+  return null;
 }
 
-function wantsFive(text: string) {
-  return /(?:change|set|switch|змін|постав|зроби).{0,40}(?:5|five|п.?ять)|(?:5|five|п.?ять).{0,24}(?:min|minute|хв|minutes)|5m markets/i.test(
-    text,
-  );
-}
-
-export function agentAnswer(text: string, locale: string): { text: string; pending?: PendingChange } | null {
-  const ask = wantsStrategy(text);
-  const five = wantsFive(text);
-  if (!ask && !five) return null;
+export function proposeWindow(windows: WindowCode, locale: string): { text: string; pending?: PendingChange } {
   const uk = locale === "uk";
   const run = readRun();
   const card = run ? catalogByKey(run.key) : null;
@@ -120,21 +125,38 @@ export function agentAnswer(text: string, locale: string): { text: string; pendi
         : "No agent is running. Get Bitcoin Windows #11 on the work desk. No order was sent.",
     };
   }
-  if (five) {
-    const pending: PendingChange = {
-      key: run.key,
-      tokenId: run.tokenId,
-      windows: "5m",
-      risk: run.risk,
-      chainName: `${card.chainName} 5m`,
-    };
-    writePending(pending);
-    const risk = riskWord(run.risk, uk);
+  const pending: PendingChange = {
+    key: run.key,
+    tokenId: run.tokenId,
+    windows,
+    risk: run.risk,
+    chainName: `${card.chainName} ${windows}`,
+  };
+  writePending(pending);
+  const risk = riskWord(run.risk, uk);
+  const label = windowsPhrase(windows, uk);
+  return {
+    pending,
+    text: uk
+      ? `Готую ${card.title} на ${label}, ризик ${risk}. Картка підтвердження на столі. Це підпис зміни NFT, не угода.`
+      : `I'll set ${card.title} to ${label} with ${risk} risk. A confirmation card is on the work desk. That signs the NFT change, not a trade.`,
+  };
+}
+
+export function agentAnswer(text: string, locale: string): { text: string; pending?: PendingChange } | null {
+  const window = askedWindow(text);
+  if (window) return proposeWindow(window, locale);
+  if (!/what(?:'s| is) my strategy|my strategy|which agent|яка (?:моя )?стратег|моя стратегія|що за стратегі/i.test(text)) {
+    return null;
+  }
+  const uk = locale === "uk";
+  const run = readRun();
+  const card = run ? catalogByKey(run.key) : null;
+  if (!run || !card || run.status !== "running") {
     return {
-      pending,
       text: uk
-        ? `Готую ${card.title} на вікна 5 хвилин, ризик ${risk}. Картка підтвердження на столі. Це підпис зміни NFT, не угода.`
-        : `I'll set ${card.title} to 5-minute markets with ${risk} risk. A confirmation card is on the work desk. That signs the NFT change, not a trade.`,
+        ? "Агент не біжить. Візьми Bitcoin Windows #11 на столі. Угоду не відправлено."
+        : "No agent is running. Get Bitcoin Windows #11 on the work desk. No order was sent.",
     };
   }
   const risk = riskWord(run.risk, uk);

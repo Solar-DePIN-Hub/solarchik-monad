@@ -39,7 +39,7 @@ const copy = {
       {
         n: "5",
         title: "Desk shift",
-        body: "Start and stop stay in the browser. Asking for 5-minute windows shows a confirmation card, and signing it calls updateStrategy on that NFT, which locks transfers for 240 hours. Monad testnet has no Chainlink feed in this app, so the desk does not open a position and does not send an order.",
+        body: "Start and stop stay in the browser. Asking for a 1, 5, 10, or 15 minute window shows a confirmation card, and signing it calls updateStrategy on that NFT, which locks transfers for 240 hours. Monad testnet has no Chainlink feed in this app, so the desk does not open a position and does not send an order.",
       },
       {
         n: "6",
@@ -90,7 +90,7 @@ const copy = {
       {
         n: "5",
         title: "Зміна столу",
-        body: "Старт і пауза лишаються в браузері. Прохання про вікна на 5 хвилин показує картку, і підпис кличе updateStrategy на цьому NFT: продаж блокується на 240 годин. Фіда Chainlink на Monad testnet у цьому застосунку немає, тож стіл не відкриває позицію і не шле ордер.",
+        body: "Старт і пауза лишаються в браузері. Прохання про вікно на 1, 5, 10 або 15 хвилин показує картку, і підпис кличе updateStrategy на цьому NFT: продаж блокується на 240 годин. Фіда Chainlink на Monad testnet у цьому застосунку немає, тож стіл не відкриває позицію і не шле ордер.",
       },
       {
         n: "6",
