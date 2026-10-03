@@ -65,6 +65,10 @@ function Home() {
         <p className="font-display text-xl">{t.home.agentTitle}</p>
         <p className="mt-1 text-sm text-ink-soft">{t.home.agentBody}</p>
       </Link>
+      <Link to="/bot" className="card p-4 no-underline">
+        <p className="font-display text-xl">{t.home.botTitle}</p>
+        <p className="mt-1 text-sm text-ink-soft">{t.home.botBody}</p>
+      </Link>
       <Link to="/sol" className="card p-4 no-underline">
         <p className="font-display text-xl">{t.home.solTitle}</p>
         <p className="mt-1 text-sm text-ink-soft">{t.home.solBody}</p>

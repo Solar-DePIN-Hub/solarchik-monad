@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentRouteImport } from './routes/agent'
+import { Route as BotRouteImport } from './routes/bot'
 import { Route as CheckInRouteImport } from './routes/check-in'
 import { Route as JudgesRouteImport } from './routes/judges'
 import { Route as PlayRouteImport } from './routes/play'
@@ -26,6 +27,11 @@ const IndexRoute = IndexRouteImport.update({
 const AgentRoute = AgentRouteImport.update({
   id: '/agent',
   path: '/agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BotRoute = BotRouteImport.update({
+  id: '/bot',
+  path: '/bot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckInRoute = CheckInRouteImport.update({
@@ -62,6 +68,7 @@ const ApiSolRoute = ApiSolRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agent': typeof AgentRoute
+  '/bot': typeof BotRoute
   '/check-in': typeof CheckInRoute
   '/judges': typeof JudgesRoute
   '/play': typeof PlayRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agent': typeof AgentRoute
+  '/bot': typeof BotRoute
   '/check-in': typeof CheckInRoute
   '/judges': typeof JudgesRoute
   '/play': typeof PlayRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agent': typeof AgentRoute
+  '/bot': typeof BotRoute
   '/check-in': typeof CheckInRoute
   '/judges': typeof JudgesRoute
   '/play': typeof PlayRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/agent'
+    | '/bot'
     | '/check-in'
     | '/judges'
     | '/play'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/agent'
+    | '/bot'
     | '/check-in'
     | '/judges'
     | '/play'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/agent'
+    | '/bot'
     | '/check-in'
     | '/judges'
     | '/play'
@@ -126,6 +138,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgentRoute: typeof AgentRoute
+  BotRoute: typeof BotRoute
   CheckInRoute: typeof CheckInRoute
   JudgesRoute: typeof JudgesRoute
   PlayRoute: typeof PlayRoute
@@ -148,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/agent'
       fullPath: '/agent'
       preLoaderRoute: typeof AgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bot': {
+      id: '/bot'
+      path: '/bot'
+      fullPath: '/bot'
+      preLoaderRoute: typeof BotRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/check-in': {
@@ -198,6 +218,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgentRoute: AgentRoute,
+  BotRoute: BotRoute,
   CheckInRoute: CheckInRoute,
   JudgesRoute: JudgesRoute,
   PlayRoute: PlayRoute,
