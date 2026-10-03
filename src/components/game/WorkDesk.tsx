@@ -79,7 +79,7 @@ export function WorkDesk({
       setSession(sessionAccount().address);
       setChainTotal(await chainSuns(bag.account));
     } catch (err) {
-      setNote(err instanceof Error ? err.message.slice(0, 160) : "rejected");
+      setNote(quiet(err));
     }
   }
 
@@ -123,7 +123,7 @@ export function WorkDesk({
       setNote(receipt.status === "success" ? `Minted ${name}. Paper NFT, no payment, no trade.` : "Mint reverted.");
       await load(bag.account, bag.reader);
     } catch (err) {
-      setNote(err instanceof Error ? err.message.slice(0, 180) : "rejected");
+      setNote(quiet(err));
     } finally {
       setBusy("");
     }
@@ -141,7 +141,7 @@ export function WorkDesk({
       setChainTotal(await chainSuns(proof.player));
       setNote("Session key funded with 0.02 MON. The next roof run can record up to 40 suns without another popup.");
     } catch (err) {
-      setNote(err instanceof Error ? err.message.slice(0, 180) : "rejected");
+      setNote(quiet(err));
     } finally {
       setBusy("");
     }
@@ -185,7 +185,7 @@ export function WorkDesk({
           : `${card.title} started on paper. No order was sent.`,
       );
     } catch (err) {
-      setNote(err instanceof Error ? err.message.slice(0, 180) : "rejected");
+      setNote(quiet(err));
     } finally {
       setBusy("");
     }
@@ -195,6 +195,16 @@ export function WorkDesk({
     if (!run || run.key !== key) return;
     remember({ ...run, status: "stopped" });
     setNote(uk ? "Агент на паузі. Угоду не відправлено." : "Agent is paused. No order was sent.");
+  }
+
+  function quiet(err: unknown) {
+    const msg = err instanceof Error ? err.message : "";
+    if (/reject|denied|cancel/i.test(msg)) {
+      return uk ? "Підпис скасовано. Нічого не відправлено." : "Signature cancelled. Nothing was sent.";
+    }
+    return uk
+      ? "Не вийшло. Гаманець має бути в мережі Monad testnet. Нічого не відправлено."
+      : "That did not go through. Switch the wallet to Monad testnet. Nothing was sent.";
   }
 
   function say(line: string) {
@@ -225,25 +235,30 @@ export function WorkDesk({
     unlockAudio();
     setListening(true);
     setSaid(uk ? "Слухаю…" : "Listening…");
-    void hearOnce(locale).then((text) => {
-      setListening(false);
-      if (!text) {
-        say(uk ? "Не почув. Скажи ще раз." : "Didn't catch that. Say it again.");
-        return;
-      }
-      setDraft("");
-      const answer = deskAnswer(text, locale);
-      if (!answer) {
-        say(
-          uk
-            ? `Почув: «${text}». Питай стратегію або вікно 1, 5, 10 чи 15 хвилин.`
-            : `Heard “${text}”. Ask for the strategy, or a 1, 5, 10, or 15 minute window.`,
-        );
-        return;
-      }
-      say(answer.text);
-      if (answer.pending) setPending(answer.pending);
-    });
+    void hearOnce(locale)
+      .then((text) => {
+        setListening(false);
+        if (!text) {
+          say(uk ? "Не почув. Напиши в полі або скажи ще раз." : "Didn't catch that. Type it, or say it again.");
+          return;
+        }
+        setDraft("");
+        const answer = deskAnswer(text, locale);
+        if (!answer) {
+          say(
+            uk
+              ? `Почув: «${text}». Питай стратегію або вікно 1, 5, 10 чи 15 хвилин.`
+              : `Heard “${text}”. Ask for the strategy, or a 1, 5, 10, or 15 minute window.`,
+          );
+          return;
+        }
+        say(answer.text);
+        if (answer.pending) setPending(answer.pending);
+      })
+      .catch(() => {
+        setListening(false);
+        say(uk ? "Мікрофон не відкрився. Напиши в полі." : "The microphone did not open. Type it instead.");
+      });
   }
 
   async function confirmChange() {
@@ -276,7 +291,7 @@ export function WorkDesk({
           : "Strategy written to the NFT. Transfers stay locked for 240 hours. No order was sent.",
       );
     } catch (err) {
-      setNote(err instanceof Error ? err.message.slice(0, 180) : "rejected");
+      setNote(quiet(err));
     } finally {
       setBusy("");
     }

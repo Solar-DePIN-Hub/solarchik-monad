@@ -21,7 +21,7 @@ const GEMINI_VOICE: Record<PetVoice, string> = {
 const VIBE_LINE: Record<PetVibe, string> = {
   sunny: "Warm, bright, a little corny. Solar metaphors. Cheers the player on.",
   dry: "Deadpan, short, dry humor. Never mean. Still clearly cares.",
-  hype: "Loud, competitive, CLOCK IN energy. Roofs, suns, heat. Caps used sparingly.",
+  hype: "Loud, competitive. Roofs, suns, jumps. Caps used sparingly.",
   gentle: "Soft, slow, caring. Small words. Treats the player like a safe pocket.",
 };
 

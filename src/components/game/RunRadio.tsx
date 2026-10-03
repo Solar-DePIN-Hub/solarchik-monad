@@ -170,7 +170,7 @@ export function RunRadio({ locale, name, vibe, voice, history, t, paused, live, 
         playerId,
       });
       if (inPlayerChat()) return;
-      if (res.ok && res.text) {
+      if (res.ok && res.text && !res.offline) {
         void speak(res.text);
         return;
       }
@@ -310,7 +310,9 @@ export function RunRadio({ locale, name, vibe, voice, history, t, paused, live, 
           : gameVoiceReply(text, locale, stateRef.current ? runContext(stateRef.current) : "");
       await speak(line);
     } catch {
-      play("hurt");
+      if (turn === chatTurn.current) {
+        await speak(gameVoiceReply(text, locale, stateRef.current ? runContext(stateRef.current) : ""));
+      }
     }
     endChat(turn);
   };

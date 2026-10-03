@@ -147,7 +147,7 @@ export async function liveAsk(data: AskBuddyInput): Promise<AskBuddyResult> {
   if (NATIVE_BUILD) return { ok: true, text: canned(data.locale, data.vibe, data.name), offline: true };
   try {
     const { askBuddy } = await import("@/lib/game/askBuddy.functions");
-    return askBuddy({ data });
+    return await askBuddy({ data });
   } catch {
     return { ok: true, text: canned(data.locale, data.vibe, data.name), offline: true };
   }

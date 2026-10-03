@@ -20,7 +20,7 @@ import {
 import { liveAsk, liveHear, liveSpeak, canNativeListen, nativeListen, nativeStopListen } from "@/lib/game/buddyNet";
 import { agentAnswer } from "@/lib/game/paperAgents";
 import { gameVoiceReply } from "@/lib/game/runBanter";
-import { errKey, failOf } from "@/lib/game/netErr";
+import { failOf } from "@/lib/game/netErr";
 import type { Locale, MsgKey, TFunc } from "@/lib/game/i18n";
 import { play, unlockAudio, speakLocal, stopLocalVoice, isVoiceOn, setVoiceOn, playVoiceB64 } from "@/lib/game/audio";
 import { ReportCard, SecretaryDesk } from "./SecretaryDesk";
@@ -224,22 +224,16 @@ export function PetGame({ save, t, now: nowProp, onBack, onSetup, onChat, onSecr
         message: clean,
         playerId: save.playerId,
       });
-      if (res.ok && res.text && !res.offline) {
-        onChat(clean, res.text);
-        play("collect");
-        void speak(res.text);
-      } else if (res.ok) {
-        const line = gameVoiceReply(clean, save.locale);
-        onChat(clean, line);
-        play("collect");
-        void speak(line);
-      } else {
-        setChatNote(t(errKey(!res.ok ? res.error : "bad")));
-        play("hurt");
-      }
-    } catch (e) {
-      setChatNote(t(errKey(failOf(e))));
-      play("hurt");
+      const line =
+        res.ok && res.text && !res.offline ? res.text : gameVoiceReply(clean, save.locale);
+      onChat(clean, line);
+      play("collect");
+      void speak(line);
+    } catch {
+      const line = gameVoiceReply(clean, save.locale);
+      onChat(clean, line);
+      play("collect");
+      void speak(line);
     } finally {
       sendingRef.current = false;
       setSending(false);
