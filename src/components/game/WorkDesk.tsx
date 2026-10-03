@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Mic } from "lucide-react";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { activeChain, DEPLOYED, strategyAbi, txUrl } from "@/lib/chain";
@@ -69,6 +69,24 @@ export function WorkDesk({
     scout04: "15m",
     combo: "15m",
   });
+
+  useEffect(() => {
+    const eth = (window as Window & { ethereum?: Eth }).ethereum;
+    if (!eth) return;
+    let cancel = false;
+    void eth.request({ method: "eth_accounts" }).then((rows) => {
+      const first = (rows as string[])[0] as `0x${string}` | undefined;
+      if (!first || cancel) return;
+      setAccount(first);
+      const reader = createPublicClient({ chain: activeChain, transport: http(activeChain.rpcUrls.default.http[0]) });
+      void load(first, reader);
+    });
+    return () => {
+      cancel = true;
+    };
+    // The owned list should be on screen before the first click.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function connect() {
     setNote("");
@@ -143,14 +161,15 @@ export function WorkDesk({
   async function getAgent(key: CatalogAgent["key"]) {
     const card = catalogByKey(key);
     if (!card || busy) return;
-    const windows = card.windows === "1m" || card.windows === "5m" || card.windows === "10m" || card.windows === "15m" ? card.windows : "15m";
     const chainName = card.chainLabel;
     setBusy(key);
     setNote("");
     try {
       const bag = await wallet();
       setAccount(bag.account);
-      let token = (await tokens(bag.account, bag.reader)).find((item) => item.name.startsWith(card.chainName));
+      const ownedNow = await tokens(bag.account, bag.reader);
+      const known = new Set(ownedNow.map((item) => item.id));
+      let token = ownedNow.find((item) => item.name === chainName || item.name.startsWith(card.chainName));
       if (!token) {
         const tx = await bag.client.writeContract({
           address: DEPLOYED.strategy,
@@ -163,8 +182,9 @@ export function WorkDesk({
         const receipt = await bag.reader.waitForTransactionReceipt({ hash: tx });
         setHash(tx);
         if (receipt.status !== "success") throw new Error("revert");
-        token = (await tokens(bag.account, bag.reader)).find((item) => item.name === chainName);
-      } else {
+        const after = await tokens(bag.account, bag.reader);
+        token = after.find((item) => !known.has(item.id)) || after.find((item) => item.name.startsWith(card.chainName));
+      } else if (token.name !== chainName) {
         const tx = await bag.client.writeContract({
           address: DEPLOYED.strategy,
           abi: strategyAbi,
@@ -179,12 +199,12 @@ export function WorkDesk({
         token = { ...token, name: chainName, risk: card.risk };
       }
       if (!token) throw new Error("revert");
-      remember({ key: card.key, tokenId: token.id, status: "running", windows, risk: card.risk });
+      remember({ key: card.key, tokenId: token.id, status: "running", windows: card.windows, risk: card.risk });
       await load(bag.account, bag.reader);
       setNote(
         uk
-          ? `NFT #${token.id} записав «${chainName}». Угоду не відправлено.`
-          : `NFT #${token.id} recorded “${chainName}”. No order was sent.`,
+          ? `Працює. NFT #${token.id} зберігає «${chainName}». Угоду не відправлено.`
+          : `Working. NFT #${token.id} stores “${chainName}”. No order was sent.`,
       );
     } catch (err) {
       setNote(quiet(err));
@@ -201,6 +221,9 @@ export function WorkDesk({
 
   function quiet(err: unknown) {
     const msg = err instanceof Error ? err.message : "";
+    if (/metamask|provider|ethereum/i.test(msg)) {
+      return uk ? "Відкрий MetaMask. Мережа має бути Monad testnet." : "Open MetaMask. The network has to be Monad testnet.";
+    }
     if (/reject|denied|cancel/i.test(msg)) {
       return uk ? "Підпис скасовано. Нічого не відправлено." : "Signature cancelled. Nothing was sent.";
     }
@@ -349,7 +372,8 @@ export function WorkDesk({
 
       <ul className="mx-auto mt-4 grid max-w-lg gap-3">
         {CATALOG.map((item) => {
-          const held = owned.find((token) => token.name.startsWith(item.chainName));
+          const held = owned.find((token) => token.name === item.chainLabel || token.name.startsWith(item.chainName));
+          const live = run?.key === item.key && run.status === "running";
           return (
             <li key={item.key} className="rounded-xl border border-border bg-surface p-4">
               <div className="flex items-start justify-between gap-3">
@@ -363,24 +387,48 @@ export function WorkDesk({
                   <div className="text-xs text-muted">{uk ? "лише комісія мережі" : "network fee only"}</div>
                 </div>
               </div>
-              <p className="mt-2 text-xs text-muted">{uk ? item.status.uk : item.status.en}</p>
+              <p className="mt-2 text-xs text-muted">
+                {live ? (uk ? "Працює · " : "Working · ") : ""}
+                {uk ? item.status.uk : item.status.en}
+              </p>
               {held ? (
-                <p className="mt-1 text-xs text-muted">
-                  {uk ? `NFT #${held.id} · ${held.name}` : `NFT #${held.id} · ${held.name}`}
-                </p>
+                <a
+                  className="mt-1 block text-xs font-semibold underline"
+                  href={`https://testnet.monadexplorer.com/token/${DEPLOYED.strategy}/instance/${held.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  NFT #{held.id} · {held.name}
+                </a>
               ) : null}
-              <button
-                type="button"
-                disabled={busy !== ""}
-                className="mt-3 h-11 w-full rounded-md bg-primary text-sm font-semibold text-primary-fg disabled:opacity-60"
-                onClick={() => void getAgent(item.key)}
-              >
-                {busy === item.key ? (uk ? "Підпис…" : "Signing…") : uk ? "Взяти і працювати" : "Take and work"}
-              </button>
+              {live ? (
+                <button
+                  type="button"
+                  className="mt-3 h-11 w-full rounded-md border border-primary text-sm font-semibold"
+                  onClick={() => stopAgent(item.key)}
+                >
+                  {uk ? "Пауза" : "Pause"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy !== ""}
+                  className="mt-3 h-11 w-full rounded-md bg-primary text-sm font-semibold text-primary-fg disabled:opacity-60"
+                  onClick={() => void getAgent(item.key)}
+                >
+                  {busy === item.key ? (uk ? "Підпис…" : "Signing…") : uk ? "Взяти і працювати" : "Take and work"}
+                </button>
+              )}
             </li>
           );
         })}
       </ul>
+      {note ? <p className="mx-auto mt-3 max-w-lg text-sm">{note}</p> : null}
+      {hash ? (
+        <a className="mx-auto mt-1 block max-w-lg break-all text-sm font-semibold underline" href={txUrl(hash)} target="_blank" rel="noreferrer">
+          {hash}
+        </a>
+      ) : null}
 
       <div className="mx-auto max-w-lg">
       <section className="mt-4 rounded-lg bg-[#2a2118] p-4 text-[#f6e7c1]">
