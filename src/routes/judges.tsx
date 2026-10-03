@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { ContractFields } from "@/components/contract-fields";
 import { EXPLORER, FAUCET, HACKATHON, MONAD_REPO, ORIGINAL_REPO, DEPLOYED, addressUrl, activeChain } from "@/lib/chain";
@@ -51,6 +51,7 @@ function JudgesPage() {
           <a href={HACKATHON} target="_blank" rel="noreferrer">
             hackathon.monad.xyz
           </a>
+          <Link to="/architecture">Architecture</Link>
         </div>
       </section>
 
