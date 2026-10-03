@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { activeChain, addressUrl, DEPLOYED, strategyAbi, txUrl } from "@/lib/chain";
 import { ensureMonadChain } from "@/components/wallet-button";
-import { authorizeSuns, chainSuns, savedPlayer, sessionAccount } from "@/lib/game/monadSuns";
+import { authorizeSuns, chainSuns, sessionAccount } from "@/lib/game/monadSuns";
 import type { Locale } from "@/lib/game/i18n";
 
 type Eth = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
@@ -168,12 +168,11 @@ export function WorkDesk({
       <p className="mt-2 max-w-md text-sm text-[#d9c7a2]">
         Same five strategy names as the Solarchik desk. Mint is a real ERC-721 on {DEPLOYED.strategy.slice(0, 6)}…{DEPLOYED.strategy.slice(-4)}. The contract does not take 0.1 MON and does not place an order.
       </p>
-      <a className="mt-2 inline-block text-sm font-semibold underline" href={addressUrl(DEPLOYED.strategy)} target="_blank" rel="noreferrer">
-        Strategy contract
+      <a className="mt-3 block text-sm font-semibold underline" href={addressUrl(DEPLOYED.strategy)} target="_blank" rel="noreferrer">
+        Strategy contract {DEPLOYED.strategy.slice(0, 6)}…{DEPLOYED.strategy.slice(-4)}
       </a>
-
-      <button type="button" className="mt-4 h-11 rounded-md bg-[#e8b931] px-4 text-sm font-semibold text-[#1b140c]" onClick={() => void connect()}>
-        {account ? `${account.slice(0, 6)}…${account.slice(-4)}` : "Connect Monad wallet"}
+      <button type="button" className="mt-3 h-11 rounded-md bg-[#e8b931] px-4 text-sm font-semibold text-[#1b140c]" onClick={() => void connect()}>
+        {account ? `Wallet ${account.slice(0, 6)}…${account.slice(-4)}` : "Connect Monad wallet"}
       </button>
 
       <section className="mt-4 rounded-lg bg-[#2a2118] p-4">
@@ -182,7 +181,7 @@ export function WorkDesk({
           One signature funds a session key with 0.02 MON. After that, suns from the roof run are a real recordSuns transaction. The score on the yard stays on this device.
         </p>
         <p className="mt-2 text-sm">On chain: {chainTotal === null ? "—" : chainTotal}</p>
-        <p className="mt-1 break-all text-xs text-[#d9c7a2]">{session || savedPlayer() || "No session yet"}</p>
+        <p className="mt-1 break-all text-xs text-[#d9c7a2]">Session key: {session || "not created yet"}</p>
         <button
           type="button"
           disabled={busy !== ""}
