@@ -19,6 +19,7 @@ import {
 } from "@/lib/game/pet";
 import { liveAsk, liveHear, liveSpeak, canNativeListen, nativeListen, nativeStopListen } from "@/lib/game/buddyNet";
 import { agentAnswer } from "@/lib/game/paperAgents";
+import { gameVoiceReply } from "@/lib/game/runBanter";
 import { errKey, failOf } from "@/lib/game/netErr";
 import type { Locale, MsgKey, TFunc } from "@/lib/game/i18n";
 import { play, unlockAudio, speakLocal, stopLocalVoice, isVoiceOn, setVoiceOn, playVoiceB64 } from "@/lib/game/audio";
@@ -223,11 +224,15 @@ export function PetGame({ save, t, now: nowProp, onBack, onSetup, onChat, onSecr
         message: clean,
         playerId: save.playerId,
       });
-      if (res.ok && res.text) {
+      if (res.ok && res.text && !res.offline) {
         onChat(clean, res.text);
         play("collect");
-        if (res.offline) setChatNote(t("pet.chat.offline"));
-        else void speak(res.text);
+        void speak(res.text);
+      } else if (res.ok) {
+        const line = gameVoiceReply(clean, save.locale);
+        onChat(clean, line);
+        play("collect");
+        void speak(line);
       } else {
         setChatNote(t(errKey(!res.ok ? res.error : "bad")));
         play("hurt");

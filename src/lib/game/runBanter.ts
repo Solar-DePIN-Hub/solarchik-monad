@@ -163,6 +163,32 @@ export function runContext(s: RunState): string {
   return `${Math.round(s.distance / 10)}m ${s.chapter} combo ${s.combo} suns ${s.suns} hearts ${s.hearts}`;
 }
 
+export function gameVoiceReply(message: string, locale: string, context = ""): string {
+  const uk = locale === "uk";
+  const q = message.toLowerCase();
+  const meters = context.match(/(\d+)m/)?.[1];
+  const suns = context.match(/suns (\d+)/)?.[1];
+  const hearts = context.match(/hearts (\d+)/)?.[1];
+  if (/joke|жарт|сміш|анекдот/.test(q)) {
+    return uk
+      ? "Чому робот на даху взяв капелюх? Щоб схеми не перегрілись на сонці."
+      : "Why did the rooftop robot bring a hat? To keep its circuits cool in the sun.";
+  }
+  if (meters && /how|far|як|скільки|статус|run|забіг/.test(q)) {
+    return uk
+      ? `Зараз ${meters} метрів, сонць ${suns || "0"}, сердець ${hearts || "0"}. Стрибай і збирай.`
+      : `You are at ${meters} meters, ${suns || "0"} suns, ${hearts || "0"} hearts. Keep jumping.`;
+  }
+  if (meters) {
+    return uk
+      ? `Я з тобою на дахах. ${meters} метрів, сонць ${suns || "0"}. Не спіши стрибок.`
+      : `I'm with you on the roofs. ${meters} meters, ${suns || "0"} suns. Don't rush the jump.`;
+  }
+  return uk
+    ? "Я про гру. Стрибай по дахах і збирай сонця. Я поруч."
+    : "I'm here for the game. Jump the roofs and grab the suns. I'm with you.";
+}
+
 export function periodicKind(s: RunState): BanterKind {
   if (s.bonus) return "bonus";
   if (s.combo >= 4) return "combo";

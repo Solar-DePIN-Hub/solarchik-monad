@@ -5,7 +5,7 @@ import { cleanSpeech, isPetVoice, type PetVibe, type PetVoice } from "@/lib/game
 import { liveAsk, liveHear, liveSpeak, canNativeListen, nativeListen, nativeStopListen } from "@/lib/game/buddyNet";
 import { agentAnswer } from "@/lib/game/paperAgents";
 import { duckMusic, isVoiceOn, play, playVoiceB64, speakLocal, stopLocalVoice, unlockAudio } from "@/lib/game/audio";
-import { eventToBanter, pickBanter, periodicKind, runContext, scriptedBanter, type BanterKind } from "@/lib/game/runBanter";
+import { eventToBanter, gameVoiceReply, pickBanter, periodicKind, runContext, scriptedBanter, type BanterKind } from "@/lib/game/runBanter";
 import type { Ev, RunState } from "@/lib/game/sim";
 
 type SpeechRec = {
@@ -304,7 +304,11 @@ export function RunRadio({ locale, name, vibe, voice, history, t, paused, live, 
         context: stateRef.current ? runContext(stateRef.current) : "",
       });
       if (turn !== chatTurn.current) return;
-      if (res.ok && res.text) await speak(res.text);
+      const line =
+        res.ok && res.text && !res.offline
+          ? res.text
+          : gameVoiceReply(text, locale, stateRef.current ? runContext(stateRef.current) : "");
+      await speak(line);
     } catch {
       play("hurt");
     }

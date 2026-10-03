@@ -8,8 +8,8 @@ import { hearOnce, speakLocal, unlockAudio } from "@/lib/game/audio";
 import {
   CATALOG,
   WINDOWS,
-  agentAnswer,
   catalogByKey,
+  deskAnswer,
   proposeWindow,
   readPending,
   readRun,
@@ -206,7 +206,7 @@ export function WorkDesk({
   function askAgent() {
     const text = draft.trim();
     if (!text) return;
-    const answer = agentAnswer(text, locale);
+    const answer = deskAnswer(text, locale);
     setDraft("");
     if (!answer) {
       say(
@@ -232,7 +232,7 @@ export function WorkDesk({
         return;
       }
       setDraft("");
-      const answer = agentAnswer(text, locale);
+      const answer = deskAnswer(text, locale);
       if (!answer) {
         say(
           uk

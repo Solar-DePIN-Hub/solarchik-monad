@@ -143,12 +143,19 @@ export function proposeWindow(windows: WindowCode, locale: string): { text: stri
   };
 }
 
+function explicitStrategy(text: string) {
+  return /strateg|стратег/i.test(text);
+}
+
 export function agentAnswer(text: string, locale: string): { text: string; pending?: PendingChange } | null {
+  if (!explicitStrategy(text)) return null;
+  return deskAnswer(text, locale);
+}
+
+export function deskAnswer(text: string, locale: string): { text: string; pending?: PendingChange } | null {
   const window = askedWindow(text);
   if (window) return proposeWindow(window, locale);
-  if (!/what(?:'s| is) my strategy|my strategy|which agent|яка (?:моя )?стратег|моя стратегія|що за стратегі/i.test(text)) {
-    return null;
-  }
+  if (!explicitStrategy(text) && !/agent|агент/i.test(text)) return null;
   const uk = locale === "uk";
   const run = readRun();
   const card = run ? catalogByKey(run.key) : null;
