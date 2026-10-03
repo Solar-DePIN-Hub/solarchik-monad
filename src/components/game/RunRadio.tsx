@@ -3,6 +3,7 @@ import { Mic } from "lucide-react";
 import type { Locale, TFunc } from "@/lib/game/i18n";
 import { cleanSpeech, isPetVoice, type PetVibe, type PetVoice } from "@/lib/game/pet";
 import { liveAsk, liveHear, liveSpeak, canNativeListen, nativeListen, nativeStopListen } from "@/lib/game/buddyNet";
+import { agentAnswer } from "@/lib/game/paperAgents";
 import { duckMusic, isVoiceOn, play, playVoiceB64, speakLocal, stopLocalVoice, unlockAudio } from "@/lib/game/audio";
 import { eventToBanter, pickBanter, periodicKind, runContext, scriptedBanter, type BanterKind } from "@/lib/game/runBanter";
 import type { Ev, RunState } from "@/lib/game/sim";
@@ -279,6 +280,13 @@ export function RunRadio({ locale, name, vibe, voice, history, t, paused, live, 
     show(text);
     play("tick");
     try {
+      const local = agentAnswer(text, locale);
+      if (local) {
+        if (turn !== chatTurn.current) return;
+        await speak(local.text);
+        endChat(turn);
+        return;
+      }
       const res = await liveAsk({
         name,
         vibe,

@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Mic } from "lucide-react";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { activeChain, addressUrl, DEPLOYED, strategyAbi, txUrl } from "@/lib/chain";
 import { ensureMonadChain } from "@/components/wallet-button";
 import { authorizeSuns, chainSuns, sessionAccount } from "@/lib/game/monadSuns";
+import { hearOnce, speakLocal, unlockAudio } from "@/lib/game/audio";
 import {
   CATALOG,
   WINDOWS,
@@ -65,6 +66,7 @@ export function WorkDesk({
   const [pending, setPending] = useState<PendingChange | null>(() =>
     typeof localStorage === "undefined" ? null : readPending(),
   );
+  const [listening, setListening] = useState(false);
   const [draft, setDraft] = useState("");
   const [said, setSaid] = useState("");
 
@@ -195,21 +197,53 @@ export function WorkDesk({
     setNote(uk ? "Агент на паузі. Угоду не відправлено." : "Agent is paused. No order was sent.");
   }
 
+  function say(line: string) {
+    setSaid(line);
+    unlockAudio();
+    speakLocal(line, locale, "eve");
+  }
+
   function askAgent() {
     const text = draft.trim();
     if (!text) return;
     const answer = agentAnswer(text, locale);
     setDraft("");
     if (!answer) {
-      setSaid(
+      say(
         uk
           ? "Питай, яка стратегія біжить, або постав вікно: 1, 5, 10 чи 15 хвилин."
           : "Ask what strategy is running, or set a 1, 5, 10, or 15 minute window.",
       );
       return;
     }
-    setSaid(answer.text);
+    say(answer.text);
     if (answer.pending) setPending(answer.pending);
+  }
+
+  function askVoice() {
+    if (listening) return;
+    unlockAudio();
+    setListening(true);
+    setSaid(uk ? "Слухаю…" : "Listening…");
+    void hearOnce(locale).then((text) => {
+      setListening(false);
+      if (!text) {
+        say(uk ? "Не почув. Скажи ще раз." : "Didn't catch that. Say it again.");
+        return;
+      }
+      setDraft("");
+      const answer = agentAnswer(text, locale);
+      if (!answer) {
+        say(
+          uk
+            ? `Почув: «${text}». Питай стратегію або вікно 1, 5, 10 чи 15 хвилин.`
+            : `Heard “${text}”. Ask for the strategy, or a 1, 5, 10, or 15 minute window.`,
+        );
+        return;
+      }
+      say(answer.text);
+      if (answer.pending) setPending(answer.pending);
+    });
   }
 
   async function confirmChange() {
@@ -367,7 +401,7 @@ export function WorkDesk({
               className="h-10 rounded-md bg-[#1b140c] text-sm font-semibold"
               onClick={() => {
                 const answer = proposeWindow(code, locale);
-                setSaid(answer.text);
+                say(answer.text);
                 if (answer.pending) setPending(answer.pending);
               }}
             >
@@ -390,6 +424,15 @@ export function WorkDesk({
           />
           <button type="submit" className="h-11 rounded-md bg-[#f6e7c1] px-3 text-sm font-semibold text-[#1b140c]">
             {uk ? "Далі" : "Send"}
+          </button>
+          <button
+            type="button"
+            disabled={listening}
+            className="grid size-11 place-items-center rounded-md bg-[#e8b931] text-[#1b140c] disabled:opacity-60"
+            aria-label={uk ? "Говорити" : "Speak"}
+            onClick={askVoice}
+          >
+            <Mic className="size-5" />
           </button>
         </form>
         {said ? <p className="mt-3 text-sm">{said}</p> : null}

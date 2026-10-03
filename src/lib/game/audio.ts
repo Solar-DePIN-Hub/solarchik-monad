@@ -542,3 +542,76 @@ export function play(kind: string) {
       break;
   }
 }
+
+type HeardRec = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  maxAlternatives: number;
+  start: () => void;
+  stop: () => void;
+  onresult: ((ev: { results: ArrayLike<{ isFinal: boolean; 0?: { transcript: string } }> }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+};
+
+export function hearOnce(locale: string, ms = 7000): Promise<string> {
+  return new Promise((resolve) => {
+    const w = window as unknown as {
+      SpeechRecognition?: new () => HeardRec;
+      webkitSpeechRecognition?: new () => HeardRec;
+    };
+    const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!SR) {
+      resolve("");
+      return;
+    }
+    let text = "";
+    let settled = false;
+    const finish = (value: string) => {
+      if (settled) return;
+      settled = true;
+      resolve(value.trim());
+    };
+    try {
+      const rec = new SR();
+      rec.lang = SPEECH_LANG[locale] || "en-US";
+      rec.interimResults = true;
+      rec.continuous = false;
+      rec.maxAlternatives = 1;
+      const timer = window.setTimeout(() => {
+        try {
+          rec.stop();
+        } catch {
+          /* ended */
+        }
+        finish(text);
+      }, ms);
+      rec.onresult = (ev) => {
+        const last = ev.results[ev.results.length - 1];
+        const bit = String(last?.[0]?.transcript || "").trim();
+        if (bit) text = bit;
+        if (last?.isFinal) {
+          window.clearTimeout(timer);
+          try {
+            rec.stop();
+          } catch {
+            /* ended */
+          }
+          finish(text);
+        }
+      };
+      rec.onerror = () => {
+        window.clearTimeout(timer);
+        finish(text);
+      };
+      rec.onend = () => {
+        window.clearTimeout(timer);
+        finish(text);
+      };
+      rec.start();
+    } catch {
+      finish("");
+    }
+  });
+}
