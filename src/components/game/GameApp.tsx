@@ -55,6 +55,9 @@ export function GameApp() {
   const [daily, setDaily] = useState(true);
   const [runKey, setRunKey] = useState(0);
   const [signBusy, setSignBusy] = useState(false);
+  const [sunTx, setSunTx] = useState(() =>
+    typeof localStorage === "undefined" ? "" : localStorage.getItem("solarchik.suns.lastTx") || "",
+  );
   const [signError, setSignError] = useState("");
   const hold = useRef<SaveData | null>(null);
   if (save) hold.current = save;
@@ -155,7 +158,13 @@ export function GameApp() {
   const commit = useCallback(
     (result: { score: number; suns: number; maxCombo: number; distance: number; didBonus: boolean }) => {
       setSave((prev) => (prev ? applyRun(prev, result) : prev));
-      if (result.suns > 0) void recordRunSuns(result.suns).catch(() => undefined);
+      if (result.suns > 0) {
+        void recordRunSuns(result.suns)
+          .then((hash) => {
+            if (hash) setSunTx(hash);
+          })
+          .catch(() => undefined);
+      }
     },
     [],
   );
@@ -316,7 +325,7 @@ export function GameApp() {
         />
       ) : screen === "work" ? (
         WorkDeskView ? (
-          <WorkDeskView locale={view.locale} onBack={() => setScreen("pet")} />
+          <WorkDeskView locale={view.locale} onBack={() => setScreen("yard")} />
         ) : (
           <div className="grid h-dvh place-items-center bg-bg text-sm text-muted">…</div>
         )
@@ -329,6 +338,7 @@ export function GameApp() {
             onSign={doSign}
             signBusy={signBusy}
             signError={signError}
+            sunTx={sunTx}
             onFarm={() => setScreen("pet")}
             onShop={() => setScreen("shop")}
             onWork={() => {

@@ -27,6 +27,7 @@ export function Yard({
   onLocale,
   signBusy = false,
   signError = "",
+  sunTx = "",
 }: {
   save: SaveData;
   t: TFunc;
@@ -38,6 +39,7 @@ export function Yard({
   onLocale: (id: Locale) => void;
   signBusy?: boolean;
   signError?: string;
+  sunTx?: string;
 }) {
   const today = todayKey();
   const clocked = save.lastClockDay === today;
@@ -234,6 +236,16 @@ export function Yard({
                 rel="noreferrer"
               >
                 {save.clockSig.slice(0, 4)}…{save.clockSig.slice(-4)} · {save.clockCluster}
+              </a>
+            ) : null}
+            {sunTx ? (
+              <a
+                className="truncate text-center text-xs text-muted underline"
+                href={`https://testnet.monadexplorer.com/tx/${sunTx}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t("yard.sunTx")} {sunTx.slice(0, 4)}…{sunTx.slice(-4)}
               </a>
             ) : null}
             {signed && save.clockKind === "message" && save.clockSig ? (

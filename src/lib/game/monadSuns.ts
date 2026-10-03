@@ -93,5 +93,6 @@ export async function recordRunSuns(count: number) {
     account: session,
     chain: activeChain,
   });
+  localStorage.setItem("solarchik.suns.lastTx", hash);
   return hash;
 }

@@ -37,7 +37,7 @@ export const en = {
     judges: "Project profile",
     agentTitle: "Paper agent",
     agentBody: "Set limits, then let an agent key record simulated intents.",
-    botTitle: "Kuru bot",
+    botTitle: "No swap",
     botBody: "Set a limit. A swap counts only when a transaction exists.",
   },
   checkin: {
@@ -157,11 +157,10 @@ export const en = {
     cardBody: "The demo, the write-up, and the code link.",
     demoTitle: "Five-minute demo",
     demo1: "Open this app in a normal browser with MetaMask. An embedded preview often cannot see the extension.",
-    demo2: "Run the roofs. No wallet and no contract. Suns stay on this device.",
+    demo2: "Run the roofs. The yard score stays on this device until Allow sun recording is signed on the work desk.",
     demo3: "Connect, switch to Monad testnet, and use the faucet if the balance is empty.",
-    demo4:
-      "Daily check-in. One signature per 24 hours. If the contract address is empty, deploy first (below) and paste both addresses.",
-    demo5: "Mint a strategy NFT, open its on-chain metadata, and see the 240 hour transfer lock after an update.",
+    demo4: "From the yard, close the day. That is checkIn(), once per 24 hours. The hash opens on the Monad explorer.",
+    demo5: "On the work desk, Take and work mints a strategy NFT. Pause on that card stays in the browser and sends no transaction.",
     windowTitle: "What is new in this window",
     windowBody:
       "These contracts and this web client are the Metropolis work (1 Sep–13 Oct 2026). The Solana Mobile companion is a different program. Do not judge that repository as this submission.",
@@ -172,24 +171,24 @@ export const en = {
     copy: "Copy write-up",
     copied: "Copied",
     copyFail: "Could not copy. Select the text below.",
-    blurb: `Solarchik on Monad is a consumer app: a daily check-in on Monad testnet, a rooftop run, and strategy NFTs that are a paper simulation only.
+    blurb: `Solarchik on Monad is a consumer app. The path to show is the yard only.
 
 Track: Consumer Products & Payments (track 02).
 
-On Monad testnet (chain id 10143): SolarchikStreak.checkIn once per 24 hours. The streak resets after a gap longer than 48 hours. SolarchikStrategy is an ERC-721. tokenURI is on-chain JSON. Updating a strategy locks transfers for 240 hours. The contracts do not hold funds, place orders, or read prices.
+On Monad testnet (chain id 10143): from the yard, closing the day calls SolarchikStreak.checkIn once per 24 hours. On the work desk, Take and work mints SolarchikStrategy, an ERC-721. The token stores a name and a risk level. It does not trade. Pause on a card stays in the browser.
 
-Not on-chain: the rooftop run and its suns (this device only), and Sol's replies when no model key is set (labeled offline demo).
+Allow sun recording on the work desk signs SolarchikSuns.authorize and funds a session key with 0.02 MON. Later roof runs can call recordSuns. Until that button is signed, the yard score stays on the device.
 
-Demo: open the app in a browser with a wallet. Run the roofs with no wallet. Switch to Monad testnet, get testnet MON from the faucet, check in once, and mint a strategy NFT.
+Not in this demo: SolarchikAgent.recordPaper, and any swap. There is no Kuru order.
 
-Contracts, already on Monad testnet:
+Sol without a model key is labelled offline demo.
+
+Contracts:
 Streak https://testnet.monadexplorer.com/address/0x357c1a631f208FBB84d430bd18FEE65B54456a38
 Strategy https://testnet.monadexplorer.com/address/0xDfdd6b3402180316D780d7634624d09b9026Fb42
 Suns https://testnet.monadexplorer.com/address/0x060961d6495811582C886DB14B9F5cE6271fF3d6
-Agent https://testnet.monadexplorer.com/address/0xb18cad14A950CD4cB7EEC936FE8843ef38eB6cDE
 
 Code: https://github.com/Solar-DePIN-Hub/solarchik-monad
-The Solana Mobile app is a different program and is not this submission.
 
 Deadline: 13 October 2026, 11:59 PM ET. Submit at https://hackathon.monad.xyz`,
     onTitle: "On-chain",
@@ -198,10 +197,9 @@ Deadline: 13 October 2026, 11:59 PM ET. Submit at https://hackathon.monad.xyz`,
     onNft:
       "SolarchikStrategy is an ERC-721. Mint stores a name and risk level. tokenURI is JSON on-chain and says paper simulation. updateStrategy sets a 240 hour sale lock. Transfers revert while locked.",
     simTitle: "Not on-chain",
-    simRun: "The device sun score and best run stay in this browser. Posted suns are a separate on-chain count.",
+    simRun: "The yard sun score stays in this browser until Allow sun recording is signed. After that, recordSuns is a separate on-chain count.",
     simChat: "Sol is a companion. With a server key, replies stream from the model. Without a key, the screen says offline demo and uses a script. It never pretends.",
-    simTrade:
-      "Strategy NFTs do not trade. Kuru's MON/USDC book is on Monad testnet, but this app does not submit an order. The bot screen says simulation until a wallet signs a real swap.",
+    simTrade: "Strategy NFTs do not trade. This demo does not send a swap. Do not describe the desk agents as orders.",
     simScore: "Suns are not a token and cannot be withdrawn.",
     chainTitle: "Monad testnet",
     chainId: "Chain id",
@@ -211,16 +209,16 @@ Deadline: 13 October 2026, 11:59 PM ET. Submit at https://hackathon.monad.xyz`,
     faucet: "Faucet",
     deployTitle: "Deploy",
     deployBody:
-      "These four contracts are already on Monad testnet. The app uses the addresses below. Leave CHAINLINK_FEED unset. Kuru stays labelled simulation until a wallet signs a swap.",
+      "The demo path is the yard: run, close the day, open the work desk, mint. Other routes are not the path to show.",
     warn: "Testnet only. Not financial advice.",
     original: "Not this submission · Solana Mobile",
     pasteHint: "Addresses used by this preview",
     sessionTitle: "Session-key suns",
     sessionBody:
-      "SolarchikSuns.authorize is the only wallet popup. It sets a session key, a sun limit, and an expiry, and can fund that key for gas. recordSun and recordSuns are sent by the session key during play. If several suns queue, they share one transaction. The counter and explorer link are the chain, not the device score.",
+      "On the work desk, Allow sun recording is one MetaMask signature. It calls SolarchikSuns.authorize, sends 0.02 MON to the session key, and sets a limit of 40. The next roof run calls recordSuns from that key. Before the button, suns stay on the device. The yard score and the chain count are different numbers.",
     agentCardTitle: "Agent account",
     agentCardBody:
-      "SolarchikAgent is an owned account, not a full ERC-4337 bundler. The owner sets the agent key, a max size, a daily cap, and which paper actions are allowed, then can pause or revoke. The agent key calls recordPaper. The contract reads quote() itself. On Monad testnet there is no Chainlink price feed, so quote() stores the labelled fallback and fromChainlink is false. It never swaps or custodies funds.",
+      "SolarchikAgent is deployed. The yard and the work desk do not call recordPaper. It is not part of this demo. Pause on a strategy card is stored in the browser only.",
     sponsorTitle: "Sponsors",
     sponsorBody:
       "Privy turns on only when VITE_PRIVY_APP_ID is set. Without it the screen says so and MetaMask remains the wallet. Chainlink ETH/USD is configured for Arbitrum Sepolia. Monad testnet does not publish Chainlink price feeds, so the agent labels a fallback instead of pretending. Sol can call Grok, Kimi (Moonshot), or Qwen (DashScope) when that server key exists. A missing key stays labelled, not simulated as live.",
@@ -284,20 +282,20 @@ Deadline: 13 October 2026, 11:59 PM ET. Submit at https://hackathon.monad.xyz`,
     privy: "Privy",
   },
   bot: {
-    title: "Trading bot",
-    lead: "One limit from you. One swap from the bot. No transaction means it is still a simulation.",
-    market: "Kuru MON/USDC on Monad testnet",
-    marketMissing: "The market contract did not answer. Nothing will be sent.",
-    marketLive: "The market contract is on testnet. This app still does not call it.",
+    title: "Limits only",
+    lead: "You set a limit here. This page does not send a swap. No transaction means it is a simulation.",
+    market: "Address on Monad testnet. This page does not call a book.",
+    marketMissing: "This address has no contract code. Nothing will be sent.",
+    marketLive: "This address has some code. This page still does not call it, and it is not a swap.",
     max: "Max per swap, MON",
     daily: "Daily cap, MON",
     hours: "Permission lasts, hours",
     pause: "Pause",
     resume: "Resume",
     paused: "Paused. The bot will not ask for a swap.",
-    swap: "Ask for one swap",
+    swap: "Do not send a swap",
     sim: "Simulation. No order was signed, so there is no transaction.",
-    why: "The book is real. The order call is not wired, so this button does not invent a hash.",
+    why: "No order was signed, so there is no transaction. This page does not call a book.",
   },
 } as const;
 

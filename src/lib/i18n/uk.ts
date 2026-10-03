@@ -39,7 +39,7 @@ export const uk: Dict = {
     judges: "Профіль проєкту",
     agentTitle: "Паперовий агент",
     agentBody: "Задай ліміти, і ключ агента запише симульований намір.",
-    botTitle: "Бот Kuru",
+    botTitle: "Без свопу",
     botBody: "Спершу ліміт. Своп рахується лише коли є транзакція.",
   },
   checkin: {
@@ -158,11 +158,10 @@ export const uk: Dict = {
     cardBody: "Демо, опис і посилання на код.",
     demoTitle: "Демо на п'ять хвилин",
     demo1: "Відкрий застосунок у звичайному браузері з MetaMask. Вбудований перегляд часто не бачить розширення.",
-    demo2: "Пробіжи дахи. Гаманець і контракт не потрібні. Сонця лишаються на цьому пристрої.",
+    demo2: "Пробіжи дахи. Рахунок на дворі лишається на пристрої, поки на столі не підписано «Дозволити запис сонць».",
     demo3: "Підключи гаманець, перемкнись на тестнет Monad і візьми тестовий MON з крана, якщо баланс порожній.",
-    demo4:
-      "Щоденна відмітка. Один підпис на 24 години. Якщо адреси контракту ще немає, спочатку розгорни його нижче і встав обидві адреси.",
-    demo5: "Викарбуй NFT стратегії, відкрий метадані в мережі й побач блокування переказу на 240 годин після зміни.",
+    demo4: "З двору закрий день. Це checkIn(), раз на 24 години. Хеш відкривається в оглядачі Monad.",
+    demo5: "На столі «Взяти і працювати» мінтить NFT стратегії. Пауза на картці лишається в браузері і не шле транзакцію.",
     windowTitle: "Що нове у вікні хакатону",
     windowBody:
       "Ці контракти й цей вебклієнт — робота для Metropolis (1 вересня – 13 жовтня 2026). Застосунок Solana Mobile — інша програма. Той репозиторій не є цією заявкою.",
@@ -173,24 +172,24 @@ export const uk: Dict = {
     copy: "Скопіювати опис",
     copied: "Скопійовано",
     copyFail: "Не вдалося скопіювати. Виділи текст нижче.",
-    blurb: `Solarchik on Monad is a consumer app: a daily check-in on Monad testnet, a rooftop run, and strategy NFTs that are a paper simulation only.
+    blurb: `Solarchik on Monad is a consumer app. The path to show is the yard only.
 
 Track: Consumer Products & Payments (track 02).
 
-On Monad testnet (chain id 10143): SolarchikStreak.checkIn once per 24 hours. The streak resets after a gap longer than 48 hours. SolarchikStrategy is an ERC-721. tokenURI is on-chain JSON. Updating a strategy locks transfers for 240 hours. The contracts do not hold funds, place orders, or read prices.
+On Monad testnet (chain id 10143): from the yard, closing the day calls SolarchikStreak.checkIn once per 24 hours. On the work desk, Take and work mints SolarchikStrategy, an ERC-721. The token stores a name and a risk level. It does not trade. Pause on a card stays in the browser.
 
-Not on-chain: the rooftop run and its suns (this device only), and Sol's replies when no model key is set (labeled offline demo).
+Allow sun recording on the work desk signs SolarchikSuns.authorize and funds a session key with 0.02 MON. Later roof runs can call recordSuns. Until that button is signed, the yard score stays on the device.
 
-Demo: open the app in a browser with a wallet. Run the roofs with no wallet. Switch to Monad testnet, get testnet MON from the faucet, check in once, and mint a strategy NFT.
+Not in this demo: SolarchikAgent.recordPaper, and any swap. There is no Kuru order.
 
-Contracts, already on Monad testnet:
+Sol without a model key is labelled offline demo.
+
+Contracts:
 Streak https://testnet.monadexplorer.com/address/0x357c1a631f208FBB84d430bd18FEE65B54456a38
 Strategy https://testnet.monadexplorer.com/address/0xDfdd6b3402180316D780d7634624d09b9026Fb42
 Suns https://testnet.monadexplorer.com/address/0x060961d6495811582C886DB14B9F5cE6271fF3d6
-Agent https://testnet.monadexplorer.com/address/0xb18cad14A950CD4cB7EEC936FE8843ef38eB6cDE
 
 Code: https://github.com/Solar-DePIN-Hub/solarchik-monad
-The Solana Mobile app is a different program and is not this submission.
 
 Deadline: 13 October 2026, 11:59 PM ET. Submit at https://hackathon.monad.xyz`,
     onTitle: "У мережі",
@@ -199,11 +198,10 @@ Deadline: 13 October 2026, 11:59 PM ET. Submit at https://hackathon.monad.xyz`,
     onNft:
       "SolarchikStrategy — це ERC-721. Карбування зберігає назву й рівень ризику. tokenURI — це JSON у мережі з позначкою паперової симуляції. updateStrategy ставить блокування продажу на 240 годин. Перекази відхиляються, поки блок діє.",
     simTitle: "Не в мережі",
-    simRun: "Рахунок сонць на пристрої лишається в браузері. Записані сонця — окремий лічильник у мережі.",
+    simRun: "Рахунок сонць на дворі лишається в браузері, поки не підписано «Дозволити запис сонць». Після цього recordSuns — окремий лічильник у мережі.",
     simChat:
       "Сол — супутник. Якщо на сервері є ключ, відповіді йдуть потоком від моделі. Без ключа екран пише офлайн-демо і читає заготовку. Він не вдає модель.",
-    simTrade:
-      "NFT стратегії не торгують. Книга Kuru MON/USDC є на тестнеті Monad, але цей застосунок не надсилає ордер. Екран бота пише simulation, поки гаманець не підпише справжній своп.",
+    simTrade: "NFT стратегії не торгують. Це демо не шле своп. Не називай агентів на столі ордерами.",
     simScore: "Сонця — не токен, їх не можна вивести.",
     chainTitle: "Тестнет Monad",
     chainId: "Ідентифікатор мережі",
@@ -212,17 +210,16 @@ Deadline: 13 October 2026, 11:59 PM ET. Submit at https://hackathon.monad.xyz`,
     explorer: "Оглядач",
     faucet: "Кран",
     deployTitle: "Розгортання",
-    deployBody:
-      "Чотири контракти вже в Monad testnet. Застосунок бере адреси нижче. CHAINLINK_FEED не задавай. Kuru лишається з міткою simulation, поки гаманець не підпише своп.",
+    deployBody: "Шлях демо — двір: забіг, закрити день, відкрити стіл, мінт. Інші сторінки не є шляхом для показу.",
     warn: "Лише тестнет. Не є фінансовою порадою.",
     original: "Не ця заявка · Solana Mobile",
     pasteHint: "Адреси цього перегляду",
     sessionTitle: "Сонця через сесійний ключ",
     sessionBody:
-      "SolarchikSuns.authorize — єдине вікно гаманця. Воно задає сесійний ключ, ліміт сонць і строк, і може поповнити ключ на газ. recordSun і recordSuns під час гри надсилає вже цей ключ. Якщо сонця назбирались у чергу, вони їдуть однією транзакцією. Лічильник і посилання оглядача — це мережа, не рахунок пристрою.",
+      "На столі «Дозволити запис сонць» — один підпис MetaMask. Він кличе SolarchikSuns.authorize, надсилає 0.02 MON на сесійний ключ і ставить ліміт 40. Наступний забіг кличе recordSuns з цього ключа. До кнопки сонця лишаються на пристрої. Рахунок двору і лічильник контракту — різні числа.",
     agentCardTitle: "Рахунок агента",
     agentCardBody:
-      "SolarchikAgent — власний рахунок, не повний бандлер ERC-4337. Власник задає ключ агента, максимальний розмір, денний ліміт і дозволені паперові дії, а потім може поставити на паузу або відкликати. Ключ агента викликає recordPaper. Ціну читає сам контракт через quote(). На тестнеті Monad немає фіда Chainlink, тож quote() пише підписаний запасний курс і fromChainlink дорівнює false. Свопів і зберігання коштів немає.",
+      "SolarchikAgent розгорнуто. Двір і стіл не викликають recordPaper. Цього немає в демо. Пауза на картці стратегії зберігається лише в браузері.",
     sponsorTitle: "Спонсори",
     sponsorBody:
       "Privy вмикається лише коли задано VITE_PRIVY_APP_ID. Без нього екран так і пише, а гаманцем лишається MetaMask. ETH/USD від Chainlink налаштовано для Arbitrum Sepolia. На тестнеті Monad фіди Chainlink не опубліковані, тож агент підписує запасну ціну і не вдає оракул. Сол може кликати Grok, Kimi (Moonshot) або Qwen (DashScope), якщо на сервері є відповідний ключ. Немає ключа — є підпис, а не вдавана жива модель.",
@@ -286,19 +283,19 @@ Deadline: 13 October 2026, 11:59 PM ET. Submit at https://hackathon.monad.xyz`,
     privy: "Privy",
   },
   bot: {
-    title: "Торговий бот",
-    lead: "Ти ставиш ліміт. Бот робить один своп. Немає транзакції — це ще симуляція.",
-    market: "Kuru MON/USDC на тестнеті Monad",
-    marketMissing: "Контракт ринку не відповів. Нічого не надсилаємо.",
-    marketLive: "Контракт ринку є на тестнеті. Цей застосунок його ще не викликає.",
+    title: "Лише ліміти",
+    lead: "Тут можна поставити ліміт. Ця сторінка не шле своп. Немає транзакції — це симуляція.",
+    market: "Адреса на тестнеті Monad. Ця сторінка не викликає книгу.",
+    marketMissing: "На цій адресі немає коду контракту. Нічого не надсилаємо.",
+    marketLive: "На цій адресі є трохи коду. Сторінка його не викликає, і це не своп.",
     max: "Максимум на своп, MON",
     daily: "Денна стеля, MON",
     hours: "Дозвіл діє, годин",
     pause: "Пауза",
     resume: "Зняти паузу",
     paused: "Пауза. Бот не проситиме своп.",
-    swap: "Попросити один своп",
+    swap: "Своп не надсилати",
     sim: "Simulation. Ордер не підписано, тож транзакції немає.",
-    why: "Книга справжня. Виклик ордера не підключено, тож кнопка не вигадує хеш.",
+    why: "Ордер не підписано, тож транзакції немає. Ця сторінка не викликає книгу.",
   },
 };

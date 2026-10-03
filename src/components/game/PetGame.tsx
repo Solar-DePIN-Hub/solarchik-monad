@@ -224,15 +224,23 @@ export function PetGame({ save, t, now: nowProp, onBack, onSetup, onChat, onSecr
         message: clean,
         playerId: save.playerId,
       });
-      const line =
-        res.ok && res.text && !res.offline ? res.text : gameVoiceReply(clean, save.locale);
+      const offline = !res.ok || res.offline || !res.text;
+      const line = offline ? gameVoiceReply(clean, save.locale) : res.text;
       onChat(clean, line);
       play("collect");
+      setChatNote(
+        offline
+          ? save.locale === "uk"
+            ? "Офлайн-демо. Це не жива модель."
+            : "Offline demo. This is not a live model."
+          : "",
+      );
       void speak(line);
     } catch {
       const line = gameVoiceReply(clean, save.locale);
       onChat(clean, line);
       play("collect");
+      setChatNote(save.locale === "uk" ? "Офлайн-демо. Це не жива модель." : "Offline demo. This is not a live model.");
       void speak(line);
     } finally {
       sendingRef.current = false;

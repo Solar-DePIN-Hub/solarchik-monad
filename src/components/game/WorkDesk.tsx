@@ -145,7 +145,11 @@ export function WorkDesk({
       setSession(proof.session);
       setHash(proof.hash);
       setChainTotal(await chainSuns(proof.player));
-      setNote("Session key funded with 0.02 MON. The next roof run can record up to 40 suns without another popup.");
+      setNote(
+        uk
+          ? "Сесійний ключ поповнено на 0.02 MON. Наступний забіг може записати до 40 сонць без нового вікна."
+          : "Session key funded with 0.02 MON. The next roof run can record up to 40 suns without another popup.",
+      );
     } catch (err) {
       setNote(quiet(err));
     } finally {
@@ -370,6 +374,24 @@ export function WorkDesk({
         </button>
       </div>
 
+      <section className="mx-auto mt-4 max-w-lg rounded-xl border border-border bg-surface p-4">
+        <h2 className="text-sm font-semibold">{uk ? "Сонця в мережі" : "Suns on chain"}</h2>
+        <p className="mt-1 text-xs text-muted">
+          {uk
+            ? "Один підпис кличе authorize і кладе 0.02 MON на сесійний ключ. Далі забіг пише recordSuns без нового вікна. Рахунок на дворі лишається на пристрої."
+            : "One signature calls authorize and funds the session key with 0.02 MON. Later runs call recordSuns with no new popup. The yard score stays on this device."}
+        </p>
+        <p className="mt-2 text-sm">{uk ? "У контракті" : "On the contract"}: {chainTotal === null ? "—" : chainTotal}</p>
+        <button
+          type="button"
+          disabled={busy !== ""}
+          className="mt-3 h-11 rounded-md bg-primary px-3 text-sm font-semibold text-primary-fg disabled:opacity-60"
+          onClick={() => void allowSuns()}
+        >
+          {busy === "suns" ? (uk ? "Підпис…" : "Signing…") : uk ? "Дозволити запис сонць" : "Allow sun recording"}
+        </button>
+      </section>
+
       <ul className="mx-auto mt-4 grid max-w-lg gap-3">
         {CATALOG.map((item) => {
           const held = owned.find((token) => token.name === item.chainLabel || token.name.startsWith(item.chainName));
@@ -388,8 +410,17 @@ export function WorkDesk({
                 </div>
               </div>
               <p className="mt-2 text-xs text-muted">
-                {live ? (uk ? "Працює · " : "Working · ") : ""}
-                {uk ? item.status.uk : item.status.en}
+                {live
+                  ? uk
+                    ? "Працює. Пауза лише в браузері, транзакції немає."
+                    : "Working. Pause stays in this browser. No transaction."
+                  : held
+                    ? uk
+                      ? `NFT #${held.id} записано. Угоди немає.`
+                      : `NFT #${held.id} is stored. No order.`
+                    : uk
+                      ? "NFT ще немає."
+                      : "No NFT yet."}
               </p>
               {held ? (
                 <a
@@ -407,7 +438,7 @@ export function WorkDesk({
                   className="mt-3 h-11 w-full rounded-md border border-primary text-sm font-semibold"
                   onClick={() => stopAgent(item.key)}
                 >
-                  {uk ? "Пауза" : "Pause"}
+                  {uk ? "Пауза · лише в браузері" : "Pause · this browser only"}
                 </button>
               ) : (
                 <button

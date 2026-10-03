@@ -10,7 +10,7 @@ const copy = {
   en: {
     kicker: "Monad testnet · chain 10143",
     title: "Solarchik architecture",
-    lead: "Same map as the Solana diagram. Every box below is what this repository actually does on Monad. Nothing from Solana is left in the path.",
+    lead: "What this repository does on Monad testnet. The path to show is the yard, the run, the day close, and the work desk.",
     live: "On Monad",
     device: "On this device",
     absent: "Not in this build",
@@ -24,7 +24,7 @@ const copy = {
       {
         n: "2",
         title: "On-chain data",
-        body: "Four contracts. Streak stores the daily check-in. Strategy is the ERC-721 paper agent. Suns stores suns recorded by a session key. Agent stores paper rows, and only the configured agent key may write them.",
+        body: "Four contracts. Streak stores the daily check-in. Strategy is the ERC-721 paper agent. Suns records suns after Allow sun recording on the desk. The Agent contract is deployed, and the desk does not call recordPaper.",
       },
       {
         n: "3",
@@ -44,7 +44,7 @@ const copy = {
       {
         n: "6",
         title: "Day and suns",
-        body: "A roof run of 1200 m unlocks the day. Closing it calls checkIn() once per 24 hours. A second call in that window reverts. Suns on the yard are local until the player funds a session key with 0.02 MON. After that, recordSuns is a transaction without another popup.",
+        body: "A roof run of 1200 m unlocks the day. Closing it calls checkIn() once per 24 hours. A second call in that window reverts. Suns on the yard stay on the device until Allow sun recording on the work desk. That signs authorize and funds 0.02 MON. The next run can call recordSuns. Pause on a strategy card stays in the browser.",
       },
       {
         n: "7",
@@ -61,7 +61,7 @@ const copy = {
   uk: {
     kicker: "Monad testnet · мережа 10143",
     title: "Архітектура Solarchik",
-    lead: "Та сама схема, що в діаграмі Solana. Кожен блок нижче — це те, що цей репозиторій реально робить на Monad. Шляху Solana тут немає.",
+    lead: "Що цей репозиторій робить на Monad testnet. Шлях для показу: двір, забіг, закрити день і стіл.",
     live: "У Monad",
     device: "На пристрої",
     absent: "Цього в збірці немає",
@@ -75,7 +75,7 @@ const copy = {
       {
         n: "2",
         title: "Дані в мережі",
-        body: "Чотири контракти. Streak тримає денну відмітку. Strategy — це ERC-721 паперового агента. Suns пише сонця сесійним ключем. Agent пише паперові рядки, і лише налаштований ключ агента може їх додати.",
+        body: "Чотири контракти. Streak тримає денну відмітку. Strategy — це ERC-721 паперового агента. Suns пише сонця після кнопки «Дозволити запис сонць» на столі. Контракт Agent розгорнуто, і стіл не кличе recordPaper.",
       },
       {
         n: "3",
@@ -95,7 +95,7 @@ const copy = {
       {
         n: "6",
         title: "День і сонця",
-        body: "Забіг на 1200 м відкриває день. Закриття кличе checkIn() раз на 24 години. Другий виклик у цьому вікні контракт відхиляє. Сонця на дворі локальні, поки гравець не покладе 0.02 MON на сесійний ключ. Далі recordSuns іде без нового вікна.",
+        body: "Забіг на 1200 м відкриває день. Закриття кличе checkIn() раз на 24 години. Другий виклик у цьому вікні контракт відхиляє. Сонця на дворі лишаються на пристрої, поки на столі не натиснуто «Дозволити запис сонць». Це підпис authorize і 0.02 MON. Наступний забіг може кликати recordSuns. Пауза на картці стратегії лишається в браузері.",
       },
       {
         n: "7",
@@ -155,7 +155,7 @@ function ArchitecturePage() {
         <p className="mt-3 font-semibold">{t.device}</p>
         <p className="mt-1 text-ink-soft">{lang === "en" ? "Roof score, suns before a session, agent start and stop, Sol when no model key is set." : "Рахунок забігу, сонця до сесії, старт і пауза агента, Сол без ключа."}</p>
         <p className="mt-3 font-semibold">{t.absent}</p>
-        <p className="mt-1 text-ink-soft">{lang === "en" ? "APK, Solana, Jupiter, Phantom, phone secretary, 0.1 MON pro mint, Kuru order." : "APK, Solana, Jupiter, Phantom, телефонний секретар, pro-мінт за 0.1 MON, ордер Kuru."}</p>
+        <p className="mt-1 text-ink-soft">{lang === "en" ? "Android package, phone secretary, paid pro mint, and any order." : "Android-пакет, телефонний секретар, платний pro-мінт і будь-який ордер."}</p>
       </section>
       {t.sections.map((section) => (
         <section key={section.n} className="card p-4">
