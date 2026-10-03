@@ -10,6 +10,7 @@ import {
   WINDOWS,
   catalogByKey,
   deskAnswer,
+  laneWord,
   parseStored,
   proposeWindow,
   readPending,
@@ -64,7 +65,12 @@ export function WorkDesk({
   const [listening, setListening] = useState(false);
   const [draft, setDraft] = useState("");
   const [said, setSaid] = useState("");
-  const [pick, setPick] = useState<Record<CatalogAgent["key"], WindowCode>>({ btc11: "15m", scout04: "15m" });
+  const [pick, setPick] = useState<Record<CatalogAgent["key"], WindowCode>>({
+    btc11: "15m",
+    weather: "15m",
+    scout04: "15m",
+    combo: "15m",
+  });
 
   async function connect() {
     setNote("");
@@ -372,7 +378,9 @@ export function WorkDesk({
           return (
             <article key={item.key} className="rounded-lg bg-[#2a2118] p-3">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold">{item.title}</p>
+                <p className="text-sm font-semibold">
+                  {laneWord(item.lane, uk)} · {item.title}
+                </p>
                 <p className="text-xs text-[#e8b931]">
                   {live ? (uk ? "Біжить" : "Running") : uk ? "Стоп" : "Stopped"}
                   {" · "}

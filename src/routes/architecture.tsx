@@ -29,7 +29,7 @@ const copy = {
       {
         n: "3",
         title: "Mint",
-        body: "The work desk mints combo-free, desk-free, pred-free, combo-pro, desk-pro, plus Bitcoin Windows #11 and Events Scout #04. The player signs mint(name, risk). Gas is the only cost. The contract does not charge 0.1 MON and does not place an order.",
+        body: "The work desk mints four strategy NFTs: Bitcoin Windows #11 (crypto), Weather, Events Scout #04, and Combo. The player signs mint(name, risk). The name stores the window, for example Weather · 5m. Gas is the only cost. The contract does not charge 0.1 MON and does not place an order.",
       },
       {
         n: "4",
@@ -80,7 +80,7 @@ const copy = {
       {
         n: "3",
         title: "Мінт",
-        body: "Стіл мінтить combo-free, desk-free, pred-free, combo-pro, desk-pro, а також Bitcoin Windows #11 і Events Scout #04. Гравець підписує mint(name, risk). Платиться лише газ. Контракт не бере 0.1 MON і не відкриває угоду.",
+        body: "Стіл мінтить чотири NFT стратегії: Bitcoin Windows #11 (крипта), Weather (погода), Events Scout #04 (події) і Combo (комбо). Гравець підписує mint(name, risk). У назві лежить вікно, наприклад Weather · 5m. Платиться лише газ. Контракт не бере 0.1 MON і не відкриває угоду.",
       },
       {
         n: "4",

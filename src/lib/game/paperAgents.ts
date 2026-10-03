@@ -4,9 +4,10 @@ export const WINDOWS = ["1m", "5m", "10m", "15m"] as const;
 export type WindowCode = (typeof WINDOWS)[number];
 
 export type CatalogAgent = {
-  key: "btc11" | "scout04";
+  key: "btc11" | "weather" | "scout04" | "combo";
   title: string;
   chainName: string;
+  lane: "crypto" | "weather" | "events" | "combo";
   market: string;
   risk: AgentRisk;
   windows: string;
@@ -17,16 +18,36 @@ export const CATALOG: CatalogAgent[] = [
     key: "btc11",
     title: "Bitcoin Windows #11",
     chainName: "Bitcoin Windows #11",
-    market: "BTC 15m",
+    lane: "crypto",
+    market: "Crypto",
     risk: 2,
+    windows: "15m",
+  },
+  {
+    key: "weather",
+    title: "Weather",
+    chainName: "Weather",
+    lane: "weather",
+    market: "Weather",
+    risk: 1,
     windows: "15m",
   },
   {
     key: "scout04",
     title: "Events Scout #04",
     chainName: "Events Scout #04",
+    lane: "events",
     market: "Events",
     risk: 1,
+    windows: "15m",
+  },
+  {
+    key: "combo",
+    title: "Combo",
+    chainName: "Combo",
+    lane: "combo",
+    market: "Combo",
+    risk: 2,
     windows: "15m",
   },
 ];
@@ -62,7 +83,7 @@ function readJson<T>(key: string): T | null {
 export function readRun(): AgentRun | null {
   if (typeof localStorage === "undefined") return null;
   const row = readJson<AgentRun>(RUN_KEY);
-  if (!row || (row.key !== "btc11" && row.key !== "scout04")) return null;
+  if (!row || !CATALOG.some((item) => item.key === row.key)) return null;
   if (row.status !== "running" && row.status !== "stopped") return null;
   return row;
 }
@@ -84,6 +105,13 @@ export function writePending(pending: PendingChange | null) {
 
 export function catalogByKey(key: string) {
   return CATALOG.find((item) => item.key === key) || null;
+}
+
+export function laneWord(lane: CatalogAgent["lane"], uk: boolean) {
+  if (lane === "crypto") return uk ? "Крипта" : "Crypto";
+  if (lane === "weather") return uk ? "Погода" : "Weather";
+  if (lane === "events") return uk ? "Події" : "Events";
+  return uk ? "Комбо" : "Combo";
 }
 
 export function parseStored(name: string): { key: CatalogAgent["key"]; windows: WindowCode | null } | null {
@@ -136,8 +164,8 @@ export function proposeWindow(windows: WindowCode, locale: string): { text: stri
   if (!run || !card || run.status !== "running") {
     return {
       text: uk
-        ? "Агент не біжить. Візьми Bitcoin Windows #11 на столі. Угоду не відправлено."
-        : "No agent is running. Get Bitcoin Windows #11 on the work desk. No order was sent.",
+        ? "Агент не біжить. Візьми на столі крипту, погоду, події або комбо. Угоду не відправлено."
+        : "No agent is running. Mint crypto, weather, events, or combo on the work desk. No order was sent.",
     };
   }
   const pending: PendingChange = {
@@ -177,8 +205,8 @@ export function deskAnswer(text: string, locale: string): { text: string; pendin
   if (!run || !card || run.status !== "running") {
     return {
       text: uk
-        ? "Агент не біжить. Візьми Bitcoin Windows #11 на столі. Угоду не відправлено."
-        : "No agent is running. Get Bitcoin Windows #11 on the work desk. No order was sent.",
+        ? "Агент не біжить. Візьми на столі крипту, погоду, події або комбо. Угоду не відправлено."
+        : "No agent is running. Mint crypto, weather, events, or combo on the work desk. No order was sent.",
     };
   }
   const risk = riskWord(run.risk, uk);
