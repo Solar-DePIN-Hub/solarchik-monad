@@ -86,6 +86,21 @@ export function catalogByKey(key: string) {
   return CATALOG.find((item) => item.key === key) || null;
 }
 
+export function parseStored(name: string): { key: CatalogAgent["key"]; windows: WindowCode | null } | null {
+  const card = CATALOG.find((item) => name.startsWith(item.chainName));
+  if (!card) return null;
+  let windows: WindowCode | null = null;
+  if (/15m/.test(name)) windows = "15m";
+  else if (/10m/.test(name)) windows = "10m";
+  else if (/(?:^|[^0-9])5m/.test(name)) windows = "5m";
+  else if (/(?:^|[^0-9])1m/.test(name)) windows = "1m";
+  return { key: card.key, windows };
+}
+
+export function strategyName(card: CatalogAgent, windows: string) {
+  return `${card.chainName} · ${windows}`;
+}
+
 export function riskWord(risk: AgentRisk, uk: boolean) {
   if (risk === 1) return uk ? "спокійний" : "calm";
   if (risk === 3) return uk ? "ризиковий" : "risky";
@@ -130,7 +145,7 @@ export function proposeWindow(windows: WindowCode, locale: string): { text: stri
     tokenId: run.tokenId,
     windows,
     risk: run.risk,
-    chainName: `${card.chainName} ${windows}`,
+    chainName: strategyName(card, windows),
   };
   writePending(pending);
   const risk = riskWord(run.risk, uk);
@@ -169,7 +184,7 @@ export function deskAnswer(text: string, locale: string): { text: string; pendin
   const risk = riskWord(run.risk, uk);
   return {
     text: uk
-      ? `Працює ${card.title} на папері: ${windowsPhrase(run.windows, true)}, ризик ${risk}. Угоду не відправлено.`
-      : `You have ${card.title} running on paper with ${windowsPhrase(run.windows, false)} in ${risk} risk. No order was sent.`,
+      ? `Працює ${card.title} на папері: ${windowsPhrase(run.windows, true)}, ризик ${risk}. Це записано в NFT #${run.tokenId}. Угоду не відправлено.`
+      : `You have ${card.title} running on paper with ${windowsPhrase(run.windows, false)} in ${risk} risk. That is stored on NFT #${run.tokenId}. No order was sent.`,
   };
 }

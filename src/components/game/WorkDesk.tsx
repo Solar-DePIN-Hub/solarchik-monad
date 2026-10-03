@@ -10,10 +10,12 @@ import {
   WINDOWS,
   catalogByKey,
   deskAnswer,
+  parseStored,
   proposeWindow,
   readPending,
   readRun,
   riskWord,
+  strategyName,
   windowsPhrase,
   writePending,
   writeRun,
@@ -95,6 +97,20 @@ export function WorkDesk({
       next.push({ id: id.toString(), name: row[0], risk: Number(row[1]), lockedUntil: Number(row[2]) });
     }
     setOwned(next);
+    const saved = readRun();
+    let hydrated = false;
+    for (const token of next) {
+      const stored = parseStored(token.name);
+      if (!stored?.windows) continue;
+      setPick((prev) => ({ ...prev, [stored.key]: stored.windows as WindowCode }));
+      const risk = token.risk === 1 || token.risk === 3 ? token.risk : 2;
+      if (saved?.key === stored.key) {
+        remember({ ...saved, tokenId: token.id, windows: stored.windows, risk });
+      } else if (!saved && !hydrated) {
+        hydrated = true;
+        remember({ key: stored.key, tokenId: token.id, status: "stopped", windows: stored.windows, risk });
+      }
+    }
   }
 
   async function allowSuns() {
@@ -124,7 +140,7 @@ export function WorkDesk({
     const card = catalogByKey(key);
     if (!card || busy) return;
     const windows = pick[key];
-    const chainName = `${card.chainName} ${windows}`;
+    const chainName = strategyName(card, windows);
     setBusy(key);
     setNote("");
     try {
@@ -350,7 +366,8 @@ export function WorkDesk({
 
       <section className="mt-4 grid gap-2">
         {CATALOG.map((item) => {
-          const held = owned.find((token) => token.name.startsWith(item.chainName) || (run?.key === item.key && token.id === run.tokenId));
+          const held = owned.find((token) => token.name.startsWith(item.chainName));
+          const stored = held ? parseStored(held.name) : null;
           const live = run?.key === item.key && run.status === "running";
           return (
             <article key={item.key} className="rounded-lg bg-[#2a2118] p-3">
@@ -363,7 +380,14 @@ export function WorkDesk({
                 </p>
               </div>
               <p className="mt-1 text-xs text-[#d9c7a2]">
-                {item.market} · {riskWord(item.risk, uk)} · {windowsPhrase(live && run ? run.windows : pick[item.key], uk)}
+                {item.market} · {riskWord(item.risk, uk)} ·{" "}
+                {stored?.windows
+                  ? uk
+                    ? `у NFT ${windowsPhrase(stored.windows, true)}`
+                    : `on the NFT ${windowsPhrase(stored.windows, false)}`
+                  : uk
+                    ? "у NFT ще не записано"
+                    : "not stored on an NFT yet"}
               </p>
               <div className="mt-2 grid grid-cols-4 gap-1">
                 {WINDOWS.map((code) => (
