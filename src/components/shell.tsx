@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Hexagon, House, MessageCircle, Play, Sun } from "lucide-react";
-import { WalletButton } from "@/components/wallet-button";
+import { House, ScrollText } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
 
 function SunMark() {
@@ -16,20 +15,17 @@ function SunMark() {
 }
 
 export function Shell({ children }: { children: ReactNode }) {
-  const { t, lang, setLang } = useI18n();
+  const { lang, setLang } = useI18n();
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const play = path === "/play" || path === "/";
+  const game = path === "/play";
   const items = [
-    { to: "/", label: t.nav.home, icon: House, exact: true },
-    { to: "/check-in", label: t.nav.streak, icon: Sun, exact: false },
-    { to: "/play", label: t.nav.play, icon: Play, exact: false, play: true },
-    { to: "/strategies", label: t.nav.strategies, icon: Hexagon, exact: false },
-    { to: "/sol", label: t.nav.sol, icon: MessageCircle, exact: false },
+    { to: "/", label: lang === "uk" ? "Стіл" : "Desk" },
+    { to: "/judges", label: lang === "uk" ? "Суддям" : "Judges" },
   ] as const;
 
   return (
     <div className="app-sky flex min-h-dvh flex-col">
-      {play ? null : (
+      {game ? null : (
         <header className="sticky top-0 z-20 mx-auto flex w-full min-w-0 max-w-lg items-center justify-between gap-2 px-4 py-3">
           <Link to="/" className="flex min-w-0 items-center gap-2 text-ink no-underline">
             <SunMark />
@@ -38,53 +34,40 @@ export function Shell({ children }: { children: ReactNode }) {
               <span className="text-xs font-semibold text-ink-soft">Monad</span>
             </span>
           </Link>
-          <div className="flex items-center gap-2">
-            <div className="glass flex rounded-full p-1" role="group" aria-label="language">
-              <button
-                type="button"
-                className={lang === "en" ? "btn btn-sun min-h-9 px-3 py-1" : "btn btn-ghost min-h-9 border-transparent px-3 py-1"}
-                onClick={() => setLang("en")}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                className={lang === "uk" ? "btn btn-sun min-h-9 px-3 py-1" : "btn btn-ghost min-h-9 border-transparent px-3 py-1"}
-                onClick={() => setLang("uk")}
-              >
-                УК
-              </button>
-            </div>
-            <WalletButton />
+          <div className="glass flex rounded-full p-1" role="group" aria-label="language">
+            <button
+              type="button"
+              className={lang === "en" ? "btn btn-sun min-h-9 px-3 py-1" : "btn btn-ghost min-h-9 border-transparent px-3 py-1"}
+              onClick={() => setLang("en")}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              className={lang === "uk" ? "btn btn-sun min-h-9 px-3 py-1" : "btn btn-ghost min-h-9 border-transparent px-3 py-1"}
+              onClick={() => setLang("uk")}
+            >
+              УК
+            </button>
           </div>
         </header>
       )}
-      <main className={play ? "relative h-dvh" : "mx-auto w-full max-w-lg flex-1 px-4 pb-28"}>{children}</main>
-      {play ? null : (
-      <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))]">
-        <div className="glass dock pointer-events-auto w-full max-w-lg">
-          {items.map((item) => {
-            const active = item.exact ? path === item.to : path === item.to;
-            const Icon = item.icon;
-            if ("play" in item) {
+      <main className={game ? "relative h-dvh" : "mx-auto w-full max-w-lg flex-1 px-4 pb-28"}>{children}</main>
+      {game ? null : (
+        <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))]">
+          <div className="glass dock pointer-events-auto w-full max-w-lg">
+            {items.map((item) => {
+              const active = path === item.to;
+              const Icon = item.to === "/" ? House : ScrollText;
               return (
                 <Link key={item.to} to={item.to} data-active={active} aria-current={active ? "page" : undefined}>
-                  <span className="dock-play">
-                    <Play className="size-6 fill-ink" />
-                  </span>
+                  <Icon className="size-5" />
                   {item.label}
                 </Link>
               );
-            }
-            return (
-              <Link key={item.to} to={item.to} data-active={active} aria-current={active ? "page" : undefined}>
-                <Icon className="size-5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+            })}
+          </div>
+        </nav>
       )}
     </div>
   );

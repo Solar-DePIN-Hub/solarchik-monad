@@ -11,7 +11,7 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Solarchik on Monad" },
-      { name: "description", content: "A sunny companion for Monad testnet: daily check-in, rooftop run, and paper strategy NFTs." },
+      { name: "description", content: "Passkey agent desk on Monad testnet: daily check-in and strategy mint. No trades." },
       { name: "theme-color", content: "#ffb703" },
     ],
     links: [

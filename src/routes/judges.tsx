@@ -1,26 +1,62 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ContractFields } from "@/components/contract-fields";
-import { EXPLORER, FAUCET, HACKATHON, MONAD_REPO, ORIGINAL_REPO, DEPLOYED, addressUrl, activeChain } from "@/lib/chain";
+import { EXPLORER, FAUCET, HACKATHON, MONAD_REPO, DEPLOYED, addressUrl, activeChain } from "@/lib/chain";
 import { useI18n } from "@/lib/i18n/provider";
 
 export const Route = createFileRoute("/judges")({ component: JudgesPage });
 
-const DEPLOY = `cd contracts
-forge install foundry-rs/forge-std
-forge test
-forge script script/Deploy.s.sol:Deploy \\
-  --rpc-url https://testnet-rpc.monad.xyz \\
-  --private-key $PRIVATE_KEY \\
-  --broadcast`;
+const copy = {
+  en: {
+    title: "Project profile",
+    track: "Track · Trust, Identity & AI Infrastructure",
+    lead: "Passkey account, daily check-in, and a strategy mint. The agent does not trade.",
+    demo1: "Open the desk. Create a passkey. No seed is shown and MetaMask is not the account.",
+    demo2: "Check in. The hash opens on the Monad explorer. A second check-in inside 24 hours reverts.",
+    demo3: "Mint a strategy. The card shows the token id and the Strategy contract.",
+    demo4: "Limits and pause stay in the browser until AgentDesk is deployed. The screen says so.",
+    demo5: "Transfer stays rejected until a CVI read says verified. History says not indexed when Envio is unset. Chat says offline demo when a model key is missing.",
+    missing: "AgentDesk is not deployed. No address is invented. No public demo URL is written here yet.",
+    blurb: `Solarchik on Monad is an agent desk.
+
+Track: Trust, Identity & AI Infrastructure.
+
+On Monad testnet (chain id 10143) the desk signs SolarchikStreak.checkIn once per 24 hours and mints SolarchikStrategy, an ERC-721 with a name and a risk level. It does not trade.
+
+The account is a Mera passkey. No seed is shown. MetaMask is not on this path.
+
+Privy is not configured until VITE_PRIVY_APP_ID is set. AgentDesk is not deployed, so limits and pause stay in the browser and say so. The CRE workflow is not live. History is not indexed until VITE_ENVIO_URL is set. Kimi and Qwen say offline demo when their server keys are missing. A transfer stays rejected until a CVI read returns verified.
+
+Contracts:
+Streak https://testnet.monadexplorer.com/address/0x357c1a631f208FBB84d430bd18FEE65B54456a38
+Strategy https://testnet.monadexplorer.com/address/0xDfdd6b3402180316D780d7634624d09b9026Fb42
+
+Code: https://github.com/Solar-DePIN-Hub/solarchik-monad
+
+Deadline: 13 October 2026, 11:59 PM ET. Submit at https://hackathon.monad.xyz`,
+  },
+  uk: {
+    title: "Профіль проєкту",
+    track: "Трек · Довіра, особа й інфраструктура ШІ",
+    lead: "Акаунт з passkey, щоденна відмітка і мінт стратегії. Агент не торгує.",
+    demo1: "Відкрий стіл. Створи passkey. Сід не показується, MetaMask не є акаунтом.",
+    demo2: "Відміться. Хеш відкривається в оглядачі Monad. Друга відмітка за 24 години падає.",
+    demo3: "Замінть стратегію. Картка показує token id і контракт Strategy.",
+    demo4: "Ліміти й пауза лишаються в браузері, поки AgentDesk не задеплоєний. Екран так і пише.",
+    demo5: "Переказ лишається відхиленим, поки читання CVI не скаже verified. Історія каже, що не індексована, якщо Envio не заданий. Чат каже офлайн-демо, якщо немає ключа моделі.",
+    missing: "AgentDesk не задеплоєний. Адреса не вигадана. Публічного демо-URL тут ще немає.",
+    blurb: "",
+  },
+} as const;
 
 function JudgesPage() {
-  const { t } = useI18n();
+  const { lang } = useI18n();
+  const t = copy[lang];
+  const blurb = copy.en.blurb;
   const [copyState, setCopyState] = useState<"idle" | "ok" | "fail">("idle");
 
   async function copyBlurb() {
     try {
-      await navigator.clipboard.writeText(t.judges.blurb);
+      await navigator.clipboard.writeText(blurb);
       setCopyState("ok");
     } catch {
       setCopyState("fail");
@@ -30,155 +66,66 @@ function JudgesPage() {
   return (
     <div className="rise flex flex-col gap-4 pb-4">
       <header>
-        <p className="pill">{t.judges.kicker}</p>
-        <h1 className="font-display mt-3 text-4xl">{t.judges.title}</h1>
-        <p className="mt-2 font-semibold">{t.judges.track}</p>
-        <p className="mt-2 text-ink-soft">{t.judges.lead}</p>
-        <p className="mt-2 text-sm font-semibold">{t.judges.deadline}</p>
+        <p className="pill">Monad Metropolis</p>
+        <h1 className="font-display mt-3 text-4xl">{t.title}</h1>
+        <p className="mt-2 font-semibold">{t.track}</p>
+        <p className="mt-2 text-ink-soft">{t.lead}</p>
       </header>
-
       <section className="card p-4">
-        <h2 className="font-display text-2xl">{t.judges.packetTitle}</h2>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-          <li>{t.judges.packetDemo}</li>
-          <li>{t.judges.packetWrite}</li>
-          <li>{t.judges.packetCode}</li>
-        </ul>
-        <div className="mt-3 flex flex-col gap-2 text-sm font-semibold">
-          <a href={MONAD_REPO} target="_blank" rel="noreferrer">
-            {t.judges.code}
-          </a>
-          <a href={HACKATHON} target="_blank" rel="noreferrer">
-            hackathon.monad.xyz
-          </a>
-          <Link to="/architecture">Architecture</Link>
-        </div>
-      </section>
-
-      <section className="card p-4">
-        <h2 className="font-display text-2xl">{t.judges.demoTitle}</h2>
-        <ol className="mt-2 list-decimal space-y-2 pl-5 text-sm">
-          <li>{t.judges.demo1}</li>
-          <li>{t.judges.demo2}</li>
-          <li>{t.judges.demo3}</li>
-          <li>{t.judges.demo4}</li>
-          <li>{t.judges.demo5}</li>
+        <ol className="list-decimal space-y-2 pl-5 text-sm">
+          <li>{t.demo1}</li>
+          <li>{t.demo2}</li>
+          <li>{t.demo3}</li>
+          <li>{t.demo4}</li>
+          <li>{t.demo5}</li>
         </ol>
       </section>
-
-      <section className="card p-4">
-        <h2 className="font-display text-2xl">{t.judges.windowTitle}</h2>
-        <p className="mt-2 text-sm">{t.judges.windowBody}</p>
-      </section>
-
-      <section className="card p-4">
-        <h2 className="font-display text-2xl">{t.judges.onTitle}</h2>
-        <p className="mt-2 text-sm">{t.judges.onStreak}</p>
-        <p className="mt-2 text-sm">{t.judges.onNft}</p>
-      </section>
-      <section className="card p-4">
-        <h2 className="font-display text-2xl">{t.judges.sessionTitle}</h2>
-        <p className="mt-2 text-sm">{t.judges.sessionBody}</p>
-      </section>
-      <section className="card p-4">
-        <h2 className="font-display text-2xl">{t.judges.agentCardTitle}</h2>
-        <p className="mt-2 text-sm">{t.judges.agentCardBody}</p>
-      </section>
-      <section className="card p-4">
-        <h2 className="font-display text-2xl">{t.judges.sponsorTitle}</h2>
-        <p className="mt-2 text-sm">{t.judges.sponsorBody}</p>
-        <p className="mt-2 text-sm">{t.judges.portableBody}</p>
-      </section>
-      <section className="card p-4">
-        <h2 className="font-display text-2xl">{t.judges.simTitle}</h2>
-        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm">
-          <li>{t.judges.simRun}</li>
-          <li>{t.judges.simChat}</li>
-          <li>{t.judges.simTrade}</li>
-          <li>{t.judges.simScore}</li>
-        </ul>
-      </section>
       <section className="card p-4 text-sm">
-        <h2 className="font-display text-2xl">{t.judges.chainTitle}</h2>
-        <dl className="mt-3 space-y-2">
-          <div>
-            <dt className="font-semibold">{t.judges.chainId}</dt>
-            <dd>
-              {activeChain.id} · {activeChain.name}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-semibold">{t.judges.rpc}</dt>
-            <dd>{activeChain.rpcUrls.default.http[0]}</dd>
-          </div>
-          <div>
-            <dt className="font-semibold">{t.judges.token}</dt>
-            <dd>{activeChain.nativeCurrency.symbol}</dd>
-          </div>
-          <div>
-            <dt className="font-semibold">{t.judges.explorer}</dt>
-            <dd>
-              <a href={EXPLORER} target="_blank" rel="noreferrer">
-                {EXPLORER}
-              </a>
-            </dd>
-          </div>
-          <div>
-            <dt className="font-semibold">{t.judges.faucet}</dt>
-            <dd>
-              <a href={FAUCET} target="_blank" rel="noreferrer">
-                {FAUCET}
-              </a>
-            </dd>
-          </div>
-        </dl>
+        <p>
+          {activeChain.id} · {activeChain.name}
+        </p>
+        <p className="mt-2">{activeChain.rpcUrls.default.http[0]}</p>
+        <p className="mt-2">
+          <a href={EXPLORER} target="_blank" rel="noreferrer">
+            {EXPLORER}
+          </a>
+        </p>
+        <p className="mt-2">
+          <a href={FAUCET} target="_blank" rel="noreferrer">
+            {FAUCET}
+          </a>
+        </p>
+        <p className="mt-2">
+          <a href={MONAD_REPO} target="_blank" rel="noreferrer">
+            {MONAD_REPO}
+          </a>
+        </p>
+        <p className="mt-2">
+          <a href={HACKATHON} target="_blank" rel="noreferrer">
+            {HACKATHON}
+          </a>
+        </p>
       </section>
+      <ul className="space-y-1 text-sm font-semibold">
+        <li>
+          <a href={addressUrl(DEPLOYED.streak)} target="_blank" rel="noreferrer">
+            Streak {DEPLOYED.streak}
+          </a>
+        </li>
+        <li>
+          <a href={addressUrl(DEPLOYED.strategy)} target="_blank" rel="noreferrer">
+            Strategy {DEPLOYED.strategy}
+          </a>
+        </li>
+      </ul>
+      <p className="text-sm">{t.missing}</p>
       <section className="card p-4">
-        <h2 className="font-display text-2xl">{t.judges.deployTitle}</h2>
-        <p className="mt-2 text-sm">{t.judges.deployBody}</p>
-        <pre className="code mt-3">{DEPLOY}</pre>
-      </section>
-      <div>
-        <p className="mb-2 text-sm font-semibold">{t.judges.pasteHint}</p>
-        <ul className="mb-3 space-y-1 text-sm font-semibold">
-          <li>
-            <a href={addressUrl(DEPLOYED.streak)} target="_blank" rel="noreferrer">
-              Streak {DEPLOYED.streak}
-            </a>
-          </li>
-          <li>
-            <a href={addressUrl(DEPLOYED.strategy)} target="_blank" rel="noreferrer">
-              Strategy {DEPLOYED.strategy}
-            </a>
-          </li>
-          <li>
-            <a href={addressUrl(DEPLOYED.suns)} target="_blank" rel="noreferrer">
-              Suns {DEPLOYED.suns}
-            </a>
-          </li>
-          <li>
-            <a href={addressUrl(DEPLOYED.agent)} target="_blank" rel="noreferrer">
-              Agent {DEPLOYED.agent}
-            </a>
-          </li>
-        </ul>
-        <ContractFields />
-      </div>
-
-      <section className="card p-4">
-        <h2 className="font-display text-2xl">{t.judges.portalTitle}</h2>
-        <p className="mt-2 text-sm">{t.judges.portalBody}</p>
-        <button type="button" className="btn btn-sun mt-3" onClick={() => void copyBlurb()}>
-          {copyState === "ok" ? t.judges.copied : t.judges.copy}
+        <button type="button" className="btn btn-sun" onClick={() => void copyBlurb()}>
+          {copyState === "ok" ? (lang === "uk" ? "Скопійовано" : "Copied") : lang === "uk" ? "Скопіювати опис" : "Copy write-up"}
         </button>
-        {copyState === "fail" ? <p className="mt-2 text-sm font-semibold">{t.judges.copyFail}</p> : null}
-        <textarea className="field mt-3 min-h-64" readOnly value={t.judges.blurb} />
+        {copyState === "fail" ? <p className="mt-2 text-sm font-semibold">{lang === "uk" ? "Не вдалося скопіювати." : "Could not copy."}</p> : null}
+        <textarea className="field mt-3 min-h-64" readOnly value={blurb} />
       </section>
-
-      <p className="text-sm font-semibold">{t.judges.warn}</p>
-      <a className="text-sm font-semibold" href={ORIGINAL_REPO} target="_blank" rel="noreferrer">
-        {t.judges.original}
-      </a>
     </div>
   );
 }
