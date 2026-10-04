@@ -1,0 +1,17 @@
+name: solarchik-monad
+description: Check-in and strategy mint on Monad testnet
+contracts:
+  - name: Streak
+    events:
+      - event: "CheckedIn(address indexed user, uint256 streak, uint256 timestamp)"
+  - name: Strategy
+    events:
+      - event: "StrategyMinted(address indexed owner, uint256 indexed tokenId, string name, uint8 risk)"
+chains:
+  - id: 10143
+    start_block: 0
+    contracts:
+      - name: Streak
+        address: "0x357c1a631f208FBB84d430bd18FEE65B54456a38"
+      - name: Strategy
+        address: "0xDfdd6b3402180316D780d7634624d09b9026Fb42"

@@ -1,0 +1,16 @@
+type CheckIn {
+  id: ID!
+  user: String!
+  streak: BigInt!
+  timestamp: BigInt!
+  txHash: String!
+}
+
+type StrategyMint {
+  id: ID!
+  owner: String!
+  tokenId: BigInt!
+  name: String!
+  risk: Int!
+  txHash: String!
+}
