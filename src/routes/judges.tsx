@@ -24,7 +24,7 @@ On Monad testnet (chain id 10143) the desk signs SolarchikStreak.checkIn once pe
 
 The account is a Mera passkey. No seed is shown. MetaMask is not on this path.
 
-Privy is not configured until VITE_PRIVY_APP_ID is set. AgentDesk is not deployed, so limits and pause stay in the browser and say so. The CRE workflow is not live. History is not indexed until VITE_ENVIO_URL is set. Kimi and Qwen say offline demo when their server keys are missing. A transfer stays rejected until a CVI read returns verified.
+Privy app id cmutyetdu035e0cjpxez5f3hl is set. The agent wallet is not drawn, and it is not a second login. AgentDesk is not deployed, so limits and pause stay in the browser and say so. The CRE workflow is not live. History is not indexed until VITE_ENVIO_URL is set. Kimi and Qwen say offline demo when their server keys are missing. A transfer stays rejected until a CVI read returns verified.
 
 Contracts:
 Streak https://testnet.monadexplorer.com/address/0x357c1a631f208FBB84d430bd18FEE65B54456a38

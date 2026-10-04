@@ -7,7 +7,8 @@ import { hasSavedPasskey, lockMera, meraSigner, publicMonad, unlockMera } from "
 
 const APASS = "0xbA82D189540CaC9DC6FF46B6837CaC1BFdEC58B9" as const;
 const IMPL_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc" as const;
-const PRIVY = import.meta.env.VITE_PRIVY_APP_ID as string | undefined;
+const PRIVY_APP_ID = "cmutyetdu035e0cjpxez5f3hl";
+const PRIVY = (import.meta.env.VITE_PRIVY_APP_ID as string | undefined) || PRIVY_APP_ID;
 const ENVIO = import.meta.env.VITE_ENVIO_URL as string | undefined;
 const DESK = import.meta.env.VITE_AGENT_DESK_ADDRESS as string | undefined;
 
@@ -53,8 +54,8 @@ const copy = {
     expiry: "Expiry, hours",
     save: "Save limits locally",
     pause: "Pause · local only",
-    privy: "Privy not configured",
-    privyBody: "No VITE_PRIVY_APP_ID. The agent wallet is not drawn.",
+    privy: "Privy app id set",
+    privyBody: "The agent wallet is not drawn. This is not a second login.",
     cre: "Workflow is not live",
     creBody: "No Monad testnet forwarder address. A price is not this workflow.",
     history: "History is not indexed",
@@ -96,8 +97,8 @@ const copy = {
     expiry: "Строк, години",
     save: "Зберегти ліміти локально",
     pause: "Пауза · лише локально",
-    privy: "Privy не налаштовано",
-    privyBody: "Немає VITE_PRIVY_APP_ID. Гаманець агента не малюється.",
+    privy: "Privy app id записаний",
+    privyBody: "Гаманець агента не намальований. Це не другий логін.",
     cre: "Воркфлоу не живий",
     creBody: "Немає адреси форвардера на тестнеті Monad. Ціна не є цим воркфлоу.",
     history: "Історія не індексована",
@@ -350,8 +351,8 @@ export function AgentDesk() {
         {paused ? <p className="mt-2 text-sm font-semibold">{t.pause}</p> : null}
       </section>
       <section className="card p-4">
-        <h2 className="font-display text-2xl">{PRIVY ? "Privy" : t.privy}</h2>
-        <p className="mt-2 text-sm">{PRIVY ? "App id is set. This desk does not draw a second login." : t.privyBody}</p>
+        <h2 className="font-display text-2xl">{t.privy}</h2>
+        <p className="mt-2 text-sm">App id {PRIVY}. {t.privyBody}</p>
       </section>
       <section className="card p-4">
         <h2 className="font-display text-2xl">{t.cre}</h2>
