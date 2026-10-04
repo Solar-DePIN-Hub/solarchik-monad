@@ -364,8 +364,8 @@ export function AgentDesk() {
       <section className="card p-4">
         <h2 className="font-display text-2xl">{t.gate}</h2>
         <p className="mt-2 text-sm font-semibold">{gateLabel}</p>
-        <p className="mt-2 text-sm">{t.gateClosed}</p>
-        <button type="button" className="btn btn-ghost mt-3" disabled>
+        <p className="mt-2 text-sm">{gate === "verified" ? t.deskMissing : t.gateClosed}</p>
+        <button type="button" className="btn btn-ghost mt-3" disabled={gate !== "verified" || Boolean(busy)} onClick={() => setNote(t.deskMissing)}>
           {t.gate}
         </button>
       </section>
