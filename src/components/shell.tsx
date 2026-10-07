@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { House, ScrollText } from "lucide-react";
+import { House, Phone, ScrollText } from "lucide-react";
 import { useI18n } from "@/lib/i18n/provider";
 
 function SunMark() {
@@ -20,6 +20,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const game = path === "/play";
   const items = [
     { to: "/", label: lang === "uk" ? "Стіл" : "Desk" },
+    { to: "/secretary", label: lang === "uk" ? "Секретар" : "Secretary" },
     { to: "/judges", label: lang === "uk" ? "Суддям" : "Judges" },
   ] as const;
 
@@ -58,7 +59,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="glass dock pointer-events-auto w-full max-w-lg">
             {items.map((item) => {
               const active = path === item.to;
-              const Icon = item.to === "/" ? House : ScrollText;
+              const Icon = item.to === "/" ? House : item.to === "/secretary" ? Phone : ScrollText;
               return (
                 <Link key={item.to} to={item.to} data-active={active} aria-current={active ? "page" : undefined}>
                   <Icon className="size-5" />
