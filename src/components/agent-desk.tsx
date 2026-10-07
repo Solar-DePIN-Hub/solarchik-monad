@@ -9,8 +9,17 @@ const APASS = "0xbA82D189540CaC9DC6FF46B6837CaC1BFdEC58B9" as const;
 const IMPL_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc" as const;
 const PRIVY_APP_ID = "cmutyetdu035e0cjpxez5f3hl";
 const PRIVY = (import.meta.env.VITE_PRIVY_APP_ID as string | undefined) || PRIVY_APP_ID;
-const ENVIO = import.meta.env.VITE_ENVIO_URL as string | undefined;
+const ENVIO_URL = "https://indexer.dev.hyperindex.xyz/bbcfa6c/v1/graphql";
 const DESK = import.meta.env.VITE_AGENT_DESK_ADDRESS as string | undefined;
+
+type CheckRow = { id: string; user: string; streak: string; txHash: string };
+type MintRow = { id: string; owner: string; tokenId: string; name: string; risk: number; txHash: string };
+type HistoryRows = { checks: CheckRow[]; mints: MintRow[] };
+
+const HISTORY_QUERY = `{
+  CheckIn(limit: 8, order_by: { timestamp: desc }) { id user streak txHash }
+  StrategyMint(limit: 8, order_by: { id: desc }) { id owner tokenId name risk txHash }
+}`;
 
 const apassAbi = [
   {
@@ -58,8 +67,10 @@ const copy = {
     privyBody: "The agent wallet is not drawn. This is not a second login.",
     cre: "Workflow is not live",
     creBody: "No Monad testnet forwarder address. A price is not this workflow.",
-    history: "History is not indexed",
-    historyBody: "VITE_ENVIO_URL is empty. This list is not Envio.",
+    history: "Indexer is live. No rows yet.",
+    historyFail: "The indexer did not answer. No rows were invented.",
+    checkRow: "Check-in",
+    mintRow: "Mint",
     gate: "Transfer",
     gateClosed: "Transfer stays rejected until a CVI read says verified.",
     unavailable: "Verification unavailable",
@@ -101,8 +112,10 @@ const copy = {
     privyBody: "Гаманець агента не намальований. Це не другий логін.",
     cre: "Воркфлоу не живий",
     creBody: "Немає адреси форвардера на тестнеті Monad. Ціна не є цим воркфлоу.",
-    history: "Історія не індексована",
-    historyBody: "VITE_ENVIO_URL порожній. Цей список не Envio.",
+    history: "Індексер живий, рядків ще немає.",
+    historyFail: "Індексер не відповів. Рядків не вигадано.",
+    checkRow: "Чек-ін",
+    mintRow: "Мінт",
     gate: "Переказ",
     gateClosed: "Переказ лишається відхиленим, поки читання CVI не скаже verified.",
     unavailable: "Перевірка недоступна",
@@ -144,9 +157,34 @@ export function AgentDesk() {
   const [model, setModel] = useState<Model>("kimi");
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
+  const [history, setHistory] = useState<HistoryRows | "fail" | "wait">("wait");
 
   useEffect(() => {
     setSaved(hasSavedPasskey());
+  }, []);
+
+  useEffect(() => {
+    let gone = false;
+    void fetch(ENVIO_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ query: HISTORY_QUERY }),
+    })
+      .then(async (res) => {
+        const body = (await res.json()) as { data?: { CheckIn?: CheckRow[]; StrategyMint?: MintRow[] } };
+        if (gone) return;
+        if (!res.ok || !body.data) {
+          setHistory("fail");
+          return;
+        }
+        setHistory({ checks: body.data.CheckIn ?? [], mints: body.data.StrategyMint ?? [] });
+      })
+      .catch(() => {
+        if (!gone) setHistory("fail");
+      });
+    return () => {
+      gone = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -359,8 +397,26 @@ export function AgentDesk() {
         <p className="mt-2 text-sm">{t.creBody}</p>
       </section>
       <section className="card p-4">
-        <h2 className="font-display text-2xl">{ENVIO ? "Envio" : t.history}</h2>
-        <p className="mt-2 text-sm">{ENVIO ? ENVIO : t.historyBody}</p>
+        <h2 className="font-display text-2xl">Envio</h2>
+        {history === "wait" ? <p className="mt-2 text-sm">{t.busy}</p> : null}
+        {history === "fail" ? <p className="mt-2 text-sm">{t.historyFail}</p> : null}
+        {history !== "wait" && history !== "fail" && history.checks.length === 0 && history.mints.length === 0 ? (
+          <p className="mt-2 text-sm">{t.history}</p>
+        ) : null}
+        {history !== "wait" && history !== "fail"
+          ? history.checks.map((row) => (
+              <a key={row.id} className="mt-2 block text-sm font-semibold" href={txUrl(row.txHash)} target="_blank" rel="noreferrer">
+                {t.checkRow} {row.streak} · {row.txHash.slice(0, 10)}
+              </a>
+            ))
+          : null}
+        {history !== "wait" && history !== "fail"
+          ? history.mints.map((row) => (
+              <a key={row.id} className="mt-2 block text-sm font-semibold" href={txUrl(row.txHash)} target="_blank" rel="noreferrer">
+                {t.mintRow} {row.name} · {row.txHash.slice(0, 10)}
+              </a>
+            ))
+          : null}
       </section>
       <section className="card p-4">
         <h2 className="font-display text-2xl">{t.gate}</h2>

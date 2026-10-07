@@ -13,8 +13,8 @@ const copy = {
     answer: "Pick up",
     hangup: "Hang up",
     waiting: "Listening…",
-    silent: "No reply. No model is live, so the report is not invented.",
-    failed: "The model call failed. No invented report.",
+    silent: "No reply.",
+    failed: "No reply.",
     who: "Who called, why, and what to do next? Do not spend.",
   },
   uk: {
@@ -25,8 +25,8 @@ const copy = {
     answer: "Взяти слухавку",
     hangup: "Покласти",
     waiting: "Слухаю…",
-    silent: "Відповіді немає. Модель не жива, звіт не вигаданий.",
-    failed: "Виклик моделі впав. Звіт не вигаданий.",
+    silent: "Відповіді немає.",
+    failed: "Відповіді немає.",
     who: "Хто дзвонив, навіщо, і що робити далі? Не витрачай.",
   },
 } as const;
