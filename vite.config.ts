@@ -34,6 +34,21 @@ function wagmiNestedPlugin(): Plugin {
   };
 }
 
+/** Browser Buffer shim. The server must keep Node's own Buffer. */
+function bufferClientPlugin(): Plugin {
+  const buffer = fileURLToPath(new URL("./src/polyfill.ts", import.meta.url));
+  return {
+    name: "buffer-client",
+    applyToEnvironment(environment) {
+      return environment.name === "client";
+    },
+    resolveId(source) {
+      if (source === "buffer") return buffer;
+      return null;
+    },
+  };
+}
+
 /** The files `src/lib/db.ts` globs — same directory, same non-recursive scope. */
 function hasGlobbedMigrations(root: string): boolean {
   try {
@@ -178,13 +193,9 @@ export default defineConfig(({ command, isPreview }) => ({
     port: 8081,
     strictPort: true,
   },
-  resolve: {
-    tsconfigPaths: true,
-    alias: {
-      buffer: fileURLToPath(new URL("./src/polyfill.ts", import.meta.url)),
-    },
-  },
+  resolve: { tsconfigPaths: true },
   plugins: [
+    bufferClientPlugin(),
     wagmiNestedPlugin(),
     pgliteBootstrapPlugin(),
     // Before tanstackStart so /auth/popup never falls through to the SPA.
