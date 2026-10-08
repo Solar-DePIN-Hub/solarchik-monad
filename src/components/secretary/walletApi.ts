@@ -6,7 +6,9 @@ export type WalletRow = {
 
 export type WalletApi = {
   ready: boolean;
+  authenticated: boolean;
   login: () => void;
+  createWallet: () => Promise<void>;
   wallets: WalletRow[];
   sendTransaction: (
     tx: { to: string; from: string; value: string; chainId: number },
@@ -16,7 +18,9 @@ export type WalletApi = {
 
 export const emptyWallet: WalletApi = {
   ready: false,
+  authenticated: false,
   login() {},
+  async createWallet() {},
   wallets: [],
   async sendTransaction() {
     throw new Error("wallet");

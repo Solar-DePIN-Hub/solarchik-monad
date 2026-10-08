@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { PrivyProvider, usePrivy, useSendTransaction, useWallets } from "@privy-io/react-auth";
+import { PrivyProvider, useCreateWallet, usePrivy, useSendTransaction, useWallets } from "@privy-io/react-auth";
 import { monadTestnet } from "viem/chains";
 import { type WalletApi } from "./walletApi";
 
@@ -12,6 +12,7 @@ export function PrivyMount({ onChange }: { onChange: (api: WalletApi) => void })
       config={{
         defaultChain: monadTestnet,
         supportedChains: [monadTestnet],
+        loginMethods: ["email"],
         embeddedWallets: { ethereum: { createOnLogin: "all-users" } },
       }}
     >
@@ -21,16 +22,21 @@ export function PrivyMount({ onChange }: { onChange: (api: WalletApi) => void })
 }
 
 function Bind({ onChange }: { onChange: (api: WalletApi) => void }) {
-  const { login, ready } = usePrivy();
+  const { login, ready, authenticated } = usePrivy();
+  const { createWallet } = useCreateWallet();
   const { sendTransaction } = useSendTransaction();
   const { wallets } = useWallets();
   useEffect(() => {
     onChange({
       ready,
+      authenticated,
       login,
+      createWallet: async () => {
+        await createWallet();
+      },
       wallets,
       sendTransaction: (tx, opts) => sendTransaction(tx, opts),
     });
-  }, [ready, login, wallets, sendTransaction, onChange]);
+  }, [ready, authenticated, login, createWallet, wallets, sendTransaction, onChange]);
   return null;
 }

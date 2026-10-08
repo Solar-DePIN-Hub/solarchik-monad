@@ -77,6 +77,9 @@ const copy = {
     keyAgent: "Agent · …/1",
     pay: "Privy",
     connect: "Connect Privy",
+    privyWait: "Privy is still opening.",
+    privyMake: "Creating the Privy wallet…",
+    privyFail: "The Privy wallet was not created. Press Connect Privy again.",
     noWallet: "Not connected.",
     mon: "MON",
     faucet: "Test MON",
@@ -159,6 +162,9 @@ const copy = {
     keyAgent: "Агент · …/1",
     pay: "Privy",
     connect: "Підключити Privy",
+    privyWait: "Privy ще відкривається.",
+    privyMake: "Створюю гаманець Privy…",
+    privyFail: "Гаманець Privy не створився. Натисни Підключити Privy ще раз.",
     noWallet: "Не підключений.",
     mon: "MON",
     faucet: "Тестовий MON",
@@ -340,6 +346,8 @@ function BoothInner() {
   const [lineNote, setLineNote] = useState("");
   const sendRef = useRef(emptyWallet.sendTransaction);
   const loginRef = useRef(emptyWallet.login);
+  const createWalletRef = useRef(emptyWallet.createWallet);
+  const authedRef = useRef(false);
   const walletsRef = useRef<WalletRow[]>([]);
   const [ready, setReady] = useState(false);
   const [wallet, setWallet] = useState("");
@@ -348,6 +356,8 @@ function BoothInner() {
   const takeWallet = useRef((next: WalletApi) => {
     sendRef.current = next.sendTransaction;
     loginRef.current = next.login;
+    createWalletRef.current = next.createWallet;
+    authedRef.current = next.authenticated;
     walletsRef.current = next.wallets;
     const embedded = next.wallets.find((row) => row.walletClientType === "privy");
     const address = embedded?.address ?? "";
@@ -416,11 +426,24 @@ function BoothInner() {
     }
     let live = true;
     setPass("wait");
-    void readPass(who).then((row) => {
+    void (async () => {
+      const first = await readPass(who);
       if (!live) return;
-      setPass(row);
-      setHolder(row?.open ? who : "");
-    });
+      if (first?.open || !account || !browser || account.toLowerCase() === browser.toLowerCase()) {
+        setPass(first);
+        setHolder(first?.open ? who : "");
+        return;
+      }
+      const other = await readPass(who === browser ? account : browser);
+      if (!live) return;
+      if (other?.open) {
+        setPass(other);
+        setHolder(who === browser ? account : browser);
+        return;
+      }
+      setPass(first);
+      setHolder("");
+    })();
     return () => {
       live = false;
     };
@@ -513,7 +536,16 @@ function BoothInner() {
   }
 
   function connect() {
-    if (!ready) return;
+    if (!ready) {
+      setHint(t.privyWait);
+      return;
+    }
+    if (wallet) return;
+    if (authedRef.current) {
+      setHint(t.privyMake);
+      void createWalletRef.current().catch(() => setHint(t.privyFail));
+      return;
+    }
     loginRef.current();
   }
 
@@ -972,7 +1004,7 @@ function BoothInner() {
             {saved ? t.unlock : t.create}
           </button>
           {account ? (
-            <button type="button" className={btn + " booth-chip"} disabled={busy} onClick={() => void lookPass(account)}>
+            <button type="button" className={btn + " booth-chip"} disabled={busy} onClick={() => void lookPass(browser || account)}>
               {t.recheck}
             </button>
           ) : null}
@@ -1020,7 +1052,7 @@ function BoothInner() {
         ) : null}
         <p className="booth-muted mt-1 text-sm">{t.note}</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" className={btn + " bg-primary text-primary-fg"} disabled={!ready || busy} onClick={connect}>
+          <button type="button" className={btn + " bg-primary text-primary-fg"} disabled={busy} onClick={connect}>
             {t.connect}
           </button>
           <a className={btn + " booth-chip"} href={FAUCET} target="_blank" rel="noreferrer">
