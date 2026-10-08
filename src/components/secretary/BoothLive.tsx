@@ -527,7 +527,6 @@ function BoothInner() {
     if (!agent) return;
     let live = true;
     const ledger = readLedger();
-    setSpentCalls(ledger.spent);
     void (async () => {
       let mon = 0;
       for (const hash of ledger.hashes) {
@@ -567,8 +566,8 @@ function BoothInner() {
         }
         setCalls(rows);
         setCallsState("ok");
-        const spent = billFinished(rows);
-        if (spent !== null) setSpentCalls(spent);
+        billFinished(rows);
+        setSpentCalls(readLedger().spent);
         try {
           localStorage.setItem(CALLS_KEY, JSON.stringify(rows));
         } catch {
@@ -584,14 +583,21 @@ function BoothInner() {
     };
   }, [playerId]);
 
+  const [hideTalk, setHideTalk] = useState(false);
   const liveCall = calls.find((row) => row.status === "pending" && row.callId) ?? null;
+  const lastCall = calls.find((row) => row.callId && finishedCall(row.status)) ?? null;
+  const talk = liveCall ?? (hideTalk ? null : lastCall);
 
   useEffect(() => {
-    if (!playerId || !liveCall?.callId) {
+    if (liveCall?.callId) setHideTalk(false);
+  }, [liveCall?.callId]);
+
+  useEffect(() => {
+    if (!playerId || !talk?.callId) {
       setLiveLines([]);
       return;
     }
-    const id = liveCall.callId;
+    const id = talk.callId;
     let on = true;
     const pull = () => {
       void callTranscript(playerId, id).then((rows) => {
@@ -604,7 +610,7 @@ function BoothInner() {
       on = false;
       window.clearInterval(timer);
     };
-  }, [playerId, liveCall?.callId]);
+  }, [playerId, talk?.callId]);
 
   useEffect(() => {
     const el = talkRef.current;
@@ -924,6 +930,7 @@ function BoothInner() {
   }
 
   function hangUp() {
+    setHideTalk(true);
     setOpen(false);
     setReport("");
     setSummary(null);
@@ -1024,15 +1031,15 @@ function BoothInner() {
         </button>
         <label className="mt-4 block text-sm font-semibold">
           {t.call}
-          {liveCall ? (
+          {talk ? (
             <div ref={talkRef} className="booth-field mt-1 max-h-52 min-h-24 overflow-y-auto rounded-lg px-3 py-2 text-sm font-normal" aria-live="polite">
               <p className="booth-faint text-xs font-semibold">
-                {(liveCall.callerName || liveCall.caller || t.caller) + " · " + t.statusPending}
+                {(talk.callerName || talk.caller || t.caller) + " · " + (talk.status === "pending" ? t.statusPending : t.statusDone)}
               </p>
-              {liveLines.length === 0 && liveCall.text ? <p className="mt-2">{liveCall.text}</p> : null}
+              {liveLines.length === 0 && talk.text ? <p className="mt-2">{talk.text}</p> : null}
               {liveLines.map((lineRow, i) => (
-                <p key={`${liveCall.callId}-${i}`} className="mt-2">
-                  <span className="booth-faint font-semibold">{lineRow.caller ? liveCall.callerName || liveCall.caller || t.caller : t.sol}: </span>
+                <p key={`${talk.callId}-${i}`} className="mt-2">
+                  <span className="booth-faint font-semibold">{lineRow.caller ? talk.callerName || talk.caller || t.caller : t.sol}: </span>
                   {lineRow.text}
                 </p>
               ))}
