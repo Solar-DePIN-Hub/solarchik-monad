@@ -19,7 +19,7 @@ import {
 } from "@/lib/game/secretary";
 import { filledOn, fwdName, fwdRule, readFwdId, sortedFwd } from "@/lib/game/fwd";
 import { nativeUssd } from "@/lib/game/buddyNet";
-import { monadAddressUrl, monadTxUrl, connectMonad, readMonBalance } from "@/lib/game/monadClock";
+import { monadAddressUrl, monadTxUrl, connectMonad, listBrowserWallets, readMonBalance, type NamedWallet } from "@/lib/game/monadClock";
 import { mintUrl, passContract, readPass, type PassRead } from "@/lib/cvi";
 import { createAccount, hasPasskey, openAccount, passkeyFailed } from "@/lib/passkey";
 import { emptyWallet, type WalletApi, type WalletRow } from "./walletApi";
@@ -43,6 +43,8 @@ const copy = {
     lead: "The passkey is the account: it makes two keys. A browser wallet only lets us read a pass you already hold. Privy is the payer. It sends test MON to the agent key, so a judge does not need MetaMask.",
     recheck: "Check key",
     browser: "Check browser wallet",
+    changeWallet: "Change wallet",
+    whichWallet: "Which wallet holds the pass?",
     browserShort: "Browser",
     noBrowser: "No browser wallet.",
     chain: "Chain",
@@ -123,6 +125,8 @@ const copy = {
     lead: "Passkey — це рахунок: з нього виходять два ключі. Гаманець браузера лише читає пас, який у тебе вже є. Privy — платник: він шле тестовий MON на ключ агента, тож судді не потрібен MetaMask.",
     recheck: "Перевірити ключ",
     browser: "Перевірити гаманець",
+    changeWallet: "Змінити гаманець",
+    whichWallet: "У якому гаманці лежить пас?",
     browserShort: "Браузер",
     noBrowser: "Немає гаманця в браузері.",
     chain: "Мережа",
@@ -318,6 +322,7 @@ function BoothInner() {
   const [ready, setReady] = useState(false);
   const [wallet, setWallet] = useState("");
   const [browser, setBrowser] = useState("");
+  const [walletChoices, setWalletChoices] = useState<NamedWallet[]>([]);
   const takeWallet = useRef((next: WalletApi) => {
     sendRef.current = next.sendTransaction;
     loginRef.current = next.login;
@@ -603,17 +608,40 @@ function BoothInner() {
     setHolder(row?.open ? addr : "");
   }
 
-  async function checkWallet() {
+  async function useWallet(row: NamedWallet) {
     if (busy) return;
     setBusy(true);
     setHint("");
-    const out = await connectMonad();
+    const out = await row.connect();
     if (!out.ok) setHint(out.error === "no-wallet" ? t.noBrowser : t.accountCancel);
     else {
       setBrowser(out.address);
+      setWalletChoices([]);
       await lookPass(out.address);
     }
     setBusy(false);
+  }
+
+  async function checkWallet() {
+    if (busy) return;
+    setHint("");
+    const rows = await listBrowserWallets();
+    if (rows.length === 0) {
+      setBusy(true);
+      const out = await connectMonad();
+      if (!out.ok) setHint(out.error === "no-wallet" ? t.noBrowser : t.accountCancel);
+      else {
+        setBrowser(out.address);
+        await lookPass(out.address);
+      }
+      setBusy(false);
+      return;
+    }
+    if (rows.length === 1) {
+      await useWallet(rows[0]);
+      return;
+    }
+    setWalletChoices(rows);
   }
 
   async function accountClick() {
@@ -916,8 +944,16 @@ function BoothInner() {
             </button>
           ) : null}
           <button type="button" className={btn + " booth-chip"} disabled={busy} onClick={() => void checkWallet()}>
-            {t.browser}
+            {browser ? t.changeWallet : t.browser}
           </button>
+          {walletChoices.length > 0 ? (
+            <p className="booth-muted basis-full text-sm">{t.whichWallet}</p>
+          ) : null}
+          {walletChoices.map((row) => (
+            <button key={row.id} type="button" className={btn + " bg-primary text-primary-fg"} disabled={busy} onClick={() => void useWallet(row)}>
+              {row.name}
+            </button>
+          ))}
           {mint ? (
             <a className={btn + " booth-chip"} href={mint} target="_blank" rel="noreferrer">
               {t.mint}

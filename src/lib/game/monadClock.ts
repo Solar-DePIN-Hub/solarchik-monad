@@ -59,6 +59,64 @@ async function ensureChain(eth: Ethereum) {
   }
 }
 
+export type NamedWallet = {
+  id: string;
+  name: string;
+  connect: () => Promise<{ ok: true; address: string } | { ok: false; error: string }>;
+};
+
+type Announced = {
+  info: { uuid: string; name: string };
+  provider: Ethereum;
+};
+
+async function connectProvider(eth: Ethereum): Promise<{ ok: true; address: string } | { ok: false; error: string }> {
+  try {
+    try {
+      await eth.request({ method: "wallet_requestPermissions", params: [{ eth_accounts: {} }] });
+    } catch (error) {
+      if (rejected(error)) return { ok: false, error: "wallet" };
+    }
+    const accounts = (await eth.request({ method: "eth_requestAccounts" })) as string[];
+    const from = accounts[0];
+    if (!from || !/^0x[a-fA-F0-9]{40}$/.test(from)) return { ok: false, error: "no-wallet" };
+    await ensureChain(eth);
+    return { ok: true, address: from };
+  } catch (error) {
+    if (rejected(error)) return { ok: false, error: "wallet" };
+    return { ok: false, error: "wallet" };
+  }
+}
+
+/** Wallets that announced themselves. Falls back to whatever grabbed `window.ethereum`. */
+export function listBrowserWallets(): Promise<NamedWallet[]> {
+  if (typeof window === "undefined") return Promise.resolve([]);
+  return new Promise((resolve) => {
+    const found = new Map<string, Announced>();
+    const onAnnounce = (event: Event) => {
+      const detail = (event as CustomEvent<Announced>).detail;
+      if (!detail?.info?.uuid || typeof detail.provider?.request !== "function") return;
+      found.set(detail.info.uuid, detail);
+    };
+    window.addEventListener("eip6963:announceProvider", onAnnounce);
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+    window.setTimeout(() => {
+      window.removeEventListener("eip6963:announceProvider", onAnnounce);
+      const rows = [...found.values()].map((row) => ({
+        id: row.info.uuid,
+        name: row.info.name || "Wallet",
+        connect: () => connectProvider(row.provider),
+      }));
+      if (rows.length > 0) {
+        resolve(rows);
+        return;
+      }
+      const eth = provider();
+      resolve(eth ? [{ id: "injected", name: "Browser wallet", connect: () => connectProvider(eth) }] : []);
+    }, 200);
+  });
+}
+
 export function monadTxUrl(hash: string): string {
   return `${EXPLORER}/tx/${hash}`;
 }
