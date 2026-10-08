@@ -451,6 +451,24 @@ export async function listCalls(userId: string): Promise<LiveCall[] | null> {
   }
 }
 
+/** Tells the phone line which language to answer in. Same switch as Solarchik. */
+export async function setSecretaryLang(userId: string, locale: string): Promise<"en" | "uk" | null> {
+  if (!userId.trim()) return null;
+  const lang = locale === "en" ? "en" : "uk";
+  try {
+    const res = await fetch(`${BASE}/secretary-lang`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, lang }),
+    });
+    if (!res.ok) return null;
+    const got = str((await parseJson(res)).lang);
+    return got === "en" || got === "uk" ? got : lang;
+  } catch {
+    return null;
+  }
+}
+
 /** Arms the shared line so the next call is filed under this player. Returns seconds, or null. */
 export async function claimLine(userId: string, locale = "uk"): Promise<number | null> {
   if (!userId.trim()) return null;

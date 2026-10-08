@@ -10,6 +10,7 @@ import {
   listCalls,
   makePlayerId,
   screenCall,
+  setSecretaryLang,
   type LiveCall,
   type SecretarySummary,
   type TranscriptLine,
@@ -41,7 +42,7 @@ const copy = {
     kicker: "Night booth",
     night: "Night",
     day: "Day",
-    langNote: "The secretary answers in this language.",
+    langNote: "The phone answers in this language.",
     title: "Secretary",
     lead: "The passkey is the account: it makes two keys. A browser wallet only lets us read a pass you already hold. Privy is the payer. It sends test MON to the agent key, so a judge does not need MetaMask.",
     recheck: "Check key",
@@ -131,7 +132,7 @@ const copy = {
     kicker: "Нічна будка",
     night: "Ніч",
     day: "День",
-    langNote: "Секретар відповідає цією мовою.",
+    langNote: "Телефон відповідає цією мовою.",
     title: "Секретар",
     lead: "Passkey — це рахунок: з нього виходять два ключі. Гаманець браузера лише читає пас, який у тебе вже є. Privy — платник: він шле тестовий MON на ключ агента, тож судді не потрібен MetaMask.",
     recheck: "Перевірити ключ",
@@ -405,6 +406,7 @@ function BoothInner() {
     setTheme(readTheme());
     const id = readId();
     setPlayerId(id);
+    void setSecretaryLang(id, lang);
     void mintUrl().then(setMint);
     void passContract().then((value) => setContract(value || ""));
     setSaved(hasPasskey());
@@ -564,6 +566,7 @@ function BoothInner() {
     } catch {
       /* ignore */
     }
+    if (playerId) void setSecretaryLang(playerId, lang);
   }
 
   function chooseTheme(next: "night" | "day") {
