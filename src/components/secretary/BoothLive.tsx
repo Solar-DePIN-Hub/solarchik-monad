@@ -43,6 +43,11 @@ const copy = {
     night: "Night",
     day: "Day",
     langNote: "The phone answers in this language.",
+    langEn: "Answering in English.",
+    langUk: "Answering in Ukrainian.",
+    langFail: "The line did not take the language. Press EN again.",
+    dial: "Call this number. The talk shows under the handset.",
+    codes: "Codes",
     title: "Secretary",
     lead: "The passkey is the account: it makes two keys. A browser wallet only lets us read a pass you already hold. Privy is the payer. It sends test MON to the agent key, so a judge does not need MetaMask.",
     recheck: "Check key",
@@ -133,6 +138,11 @@ const copy = {
     night: "Ніч",
     day: "День",
     langNote: "Телефон відповідає цією мовою.",
+    langEn: "Відповідає англійською.",
+    langUk: "Відповідає українською.",
+    langFail: "Лінія не прийняла мову. Натисни EN ще раз.",
+    dial: "Дзвони на цей номер. Розмова з’явиться під слухавкою.",
+    codes: "Коди",
     title: "Секретар",
     lead: "Passkey — це рахунок: з нього виходять два ключі. Гаманець браузера лише читає пас, який у тебе вже є. Privy — платник: він шле тестовий MON на ключ агента, тож судді не потрібен MetaMask.",
     recheck: "Перевірити ключ",
@@ -348,7 +358,7 @@ function BoothInner() {
   const [locale, setLocale] = useState<Lang>("uk");
   const [theme, setTheme] = useState<"night" | "day">("night");
   const [playerId, setPlayerId] = useState("");
-  const [paidMon, setPaidMon] = useState(0);
+  const [lineLang, setLineLang] = useState<"" | "en" | "uk" | "fail">("");
   const [spentCalls, setSpentCalls] = useState(0);
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
@@ -406,7 +416,7 @@ function BoothInner() {
     setTheme(readTheme());
     const id = readId();
     setPlayerId(id);
-    void setSecretaryLang(id, lang);
+    void setSecretaryLang(id, lang).then((got) => setLineLang(got ?? "fail"));
     void mintUrl().then(setMint);
     void passContract().then((value) => setContract(value || ""));
     setSaved(hasPasskey());
@@ -566,7 +576,7 @@ function BoothInner() {
     } catch {
       /* ignore */
     }
-    if (playerId) void setSecretaryLang(playerId, lang);
+    if (playerId) void setSecretaryLang(playerId, lang).then((got) => setLineLang(got ?? "fail"));
   }
 
   function chooseTheme(next: "night" | "day") {
@@ -907,15 +917,6 @@ function BoothInner() {
               {t.day}
             </button>
           </div>
-          <div className="booth-chip flex rounded-full p-1" role="group" aria-label="Language">
-            <button type="button" className={locale === "en" ? "rounded-full bg-primary px-3 py-1.5 text-sm font-semibold text-primary-fg" : "booth-muted rounded-full px-3 py-1.5 text-sm font-semibold"} onClick={() => choose("en")}>
-              EN
-            </button>
-            <button type="button" className={locale === "uk" ? "rounded-full bg-primary px-3 py-1.5 text-sm font-semibold text-primary-fg" : "booth-muted rounded-full px-3 py-1.5 text-sm font-semibold"} onClick={() => choose("uk")}>
-              УК
-            </button>
-          </div>
-          <p className="booth-muted mt-1 text-right text-xs">{t.langNote}</p>
           <a className="booth-muted px-1 text-xs font-semibold underline" href="/judges">
             {locale === "uk" ? "Суддям" : "Judges"}
           </a>
@@ -949,6 +950,21 @@ function BoothInner() {
             <Phone className="size-8" aria-hidden />
           </span>
         </div>
+        <div className="mx-auto mt-4 flex max-w-sm flex-col items-center gap-2 text-center">
+          <div className="booth-chip flex rounded-full p-1" role="group" aria-label="Language">
+            <button type="button" className={locale === "en" ? "rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-fg" : "booth-muted rounded-full px-5 py-2 text-sm font-semibold"} onClick={() => choose("en")}>
+              EN
+            </button>
+            <button type="button" className={locale === "uk" ? "rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-fg" : "booth-muted rounded-full px-5 py-2 text-sm font-semibold"} onClick={() => choose("uk")}>
+              УК
+            </button>
+          </div>
+          <p className={"text-sm font-semibold " + (lineLang === "fail" ? "booth-gold" : "booth-muted")}>
+            {lineLang === "en" ? t.langEn : lineLang === "uk" ? t.langUk : lineLang === "fail" ? t.langFail : t.langNote}
+          </p>
+          <a className="font-display text-2xl font-semibold tracking-wide" href={`tel:${ASSISTANT_LINE}`}>{ASSISTANT_LINE}</a>
+          <p className="booth-muted text-sm">{t.dial}</p>
+        </div>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <div className="booth-chip rounded-lg px-3 py-2">
             <p className="booth-faint text-xs font-semibold uppercase tracking-wide">{t.credit}</p>
@@ -960,7 +976,7 @@ function BoothInner() {
           </div>
         </div>
         <p className="booth-muted mt-2 text-sm">{t.callsLeft.replace("{n}", String(callsLeft))}</p>
-        <button type="button" className={btn + " booth-chip mt-3"} disabled={busy} onClick={() => void topUp()}>
+        <button type="button" className={btn + " mt-3 bg-primary text-primary-fg"} disabled={busy} onClick={() => void topUp()}>
           {t.topup}
         </button>
         <label className="mt-4 block text-sm font-semibold">
@@ -1025,17 +1041,20 @@ function BoothInner() {
               ))}
             </select>
           </label>
-          <p className="booth-muted mt-2 font-mono text-xs leading-relaxed">
-            {t.codeOn}: {filledOn(fwdRule(country, locale), ASSISTANT_LINE)}
-            <br />
-            {t.codeOff}: {fwdRule(country, locale).off}
-            {fwdRule(country, locale).check ? (
-              <>
-                <br />
-                {t.codeAsk}: {fwdRule(country, locale).check}
-              </>
-            ) : null}
-          </p>
+          <details className="mt-2">
+            <summary className="booth-muted cursor-pointer text-sm">{t.codes}</summary>
+            <p className="booth-muted mt-2 font-mono text-xs leading-relaxed">
+              {filledOn(fwdRule(country, locale), ASSISTANT_LINE)}
+              <br />
+              {t.codeOff}: {fwdRule(country, locale).off}
+              {fwdRule(country, locale).check ? (
+                <>
+                  <br />
+                  {t.codeAsk}: {fwdRule(country, locale).check}
+                </>
+              ) : null}
+            </p>
+          </details>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button type="button" className={btn + " bg-danger text-white"} onClick={() => void forward(filledOn(fwdRule(country, locale), ASSISTANT_LINE))}>
               {t.fwdOn}
