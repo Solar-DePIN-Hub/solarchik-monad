@@ -237,3 +237,182 @@ a {
     transition: none;
   }
 }
+.booth {
+  --booth-bg: #071018;
+  --booth-card: color-mix(in oklab, #122533 88%, transparent);
+  --booth-chip: #183041;
+  --booth-ink: #e8f0f5;
+  --booth-muted: #8aa0ae;
+  --booth-faint: #5e7382;
+  --booth-line: color-mix(in oklab, #e8f0f5 14%, transparent);
+  --booth-glow: color-mix(in oklab, #e0564a 42%, transparent);
+  --booth-gold: #e8b931;
+  background:
+    radial-gradient(ellipse 80% 42% at 50% -8%, var(--booth-glow), transparent 70%),
+    var(--booth-bg);
+  color: var(--booth-ink);
+  transition: background-color 280ms ease, color 280ms ease;
+}
+
+.booth[data-theme="day"] {
+  --booth-bg: #f6efe2;
+  --booth-card: color-mix(in oklab, #fffaf1 92%, transparent);
+  --booth-chip: #fff;
+  --booth-ink: #1c140c;
+  --booth-muted: #6d5840;
+  --booth-faint: #8b7355;
+  --booth-line: color-mix(in oklab, #1c140c 12%, transparent);
+  --booth-glow: color-mix(in oklab, #e0564a 22%, transparent);
+  --booth-gold: #9a6b12;
+}
+
+.booth-card {
+  background: var(--booth-card);
+  border: 1px solid var(--booth-line);
+  color: var(--booth-ink);
+  box-shadow: 0 18px 40px color-mix(in oklab, #000 16%, transparent);
+  animation: booth-rise 520ms ease both;
+}
+
+.booth-chip {
+  background: var(--booth-chip);
+  border: 1px solid var(--booth-line);
+}
+
+.booth-field {
+  background: color-mix(in oklab, var(--booth-bg) 72%, transparent);
+  border: 1px solid var(--booth-line);
+  color: var(--booth-ink);
+}
+
+.booth-field::placeholder {
+  color: var(--booth-faint);
+}
+
+.booth-muted {
+  color: var(--booth-muted);
+}
+
+.booth-faint {
+  color: var(--booth-faint);
+}
+
+.booth-gold {
+  color: var(--booth-gold);
+}
+
+.booth-btn {
+  transition: transform 140ms ease, filter 140ms ease;
+}
+
+.booth-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.booth-glow {
+  background: radial-gradient(circle, var(--booth-glow), transparent 68%);
+  animation: booth-glow 4.8s ease-in-out infinite;
+}
+
+.booth-handset {
+  animation: booth-float 3.2s ease-in-out infinite;
+}
+
+.booth-phone {
+  background: #e0564a;
+  color: #fff8f2;
+  box-shadow: 0 12px 28px color-mix(in oklab, #e0564a 45%, transparent);
+}
+
+.booth.is-live .booth-handset {
+  animation: none;
+}
+
+.booth.is-live .booth-phone {
+  animation: booth-lift 0.7s ease-in-out infinite;
+}
+
+.booth-ring {
+  position: absolute;
+  inset: 0.35rem;
+  border-radius: 999px;
+  border: 2px solid color-mix(in oklab, #e0564a 55%, transparent);
+  opacity: 0;
+}
+
+.booth.is-live .booth-ring {
+  animation: booth-ring 1.6s ease-out infinite;
+}
+
+.booth.is-live .booth-ring-late {
+  animation-delay: 0.55s;
+}
+
+.booth-reply {
+  animation: booth-pop 320ms ease both;
+}
+
+@keyframes booth-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes booth-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes booth-lift {
+  0%,
+  100% {
+    transform: rotate(-10deg);
+  }
+  50% {
+    transform: rotate(8deg);
+  }
+}
+
+@keyframes booth-ring {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.72);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes booth-glow {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes booth-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

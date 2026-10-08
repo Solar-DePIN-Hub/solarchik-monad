@@ -81,7 +81,9 @@
     "vite": "^8.2.0",
     "wagmi": "^3.7.7",
     "zod": "^4.4.0",
-    "zustand": "^5.0.0"
+    "zustand": "^5.0.0",
+    "@privy-io/react-auth": "^3.48.0",
+    "@usecordon/cleanverse": "^0.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",

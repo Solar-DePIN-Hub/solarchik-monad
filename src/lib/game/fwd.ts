@@ -8,12 +8,13 @@ export type FwdRule = {
   off: string;
   check: string;
   nMode: "intl" | "nat";
+  idd: string;
   en: string;
   uk: string;
 };
 
-const GSM = { on: "**21*{n}#", off: "##21#", check: "*#21#", nMode: "intl" as const };
-const STAR72 = { on: "*72{n}", off: "*73", check: "", nMode: "nat" as const };
+const GSM = { on: "**21*{n}#", off: "##21#", check: "*#21#", nMode: "intl" as const, idd: "00" };
+const STAR72 = { on: "*72{n}", off: "*73", check: "", nMode: "nat" as const, idd: "011" };
 
 function g(id: string, iso: string, cc: string, en: string, uk: string, extra: Partial<FwdRule> = {}): FwdRule {
   return { id, iso, cc, en, uk, ...GSM, ...extra };
@@ -47,9 +48,9 @@ export const FWD_COUNTRIES: FwdRule[] = [
   g("LV", "LV", "371", "Latvia", "Латвія"),
   g("EE", "EE", "372", "Estonia", "Естонія"),
   g("MD", "MD", "373", "Moldova", "Молдова"),
-  g("BY", "BY", "375", "Belarus", "Білорусь"),
-  g("RU", "RU", "7", "Russia", "Росія"),
-  g("KZ", "KZ", "7", "Kazakhstan", "Казахстан"),
+  g("BY", "BY", "375", "Belarus", "Білорусь", { idd: "810" }),
+  g("RU", "RU", "7", "Russia", "Росія", { idd: "810" }),
+  g("KZ", "KZ", "7", "Kazakhstan", "Казахстан", { idd: "810" }),
   g("TR", "TR", "90", "Turkey", "Туреччина"),
   g("IL", "IL", "972", "Israel", "Ізраїль"),
   g("AE", "AE", "971", "UAE", "ОАЕ"),
@@ -59,10 +60,10 @@ export const FWD_COUNTRIES: FwdRule[] = [
   g("PH", "PH", "63", "Philippines", "Філіппіни"),
   g("ID", "ID", "62", "Indonesia", "Індонезія"),
   g("VN", "VN", "84", "Vietnam", "В’єтнам"),
-  g("TH", "TH", "66", "Thailand", "Таїланд"),
+  g("TH", "TH", "66", "Thailand", "Таїланд", { idd: "001" }),
   g("MY", "MY", "60", "Malaysia", "Малайзія"),
-  g("SG", "SG", "65", "Singapore", "Сінгапур"),
-  g("AU", "AU", "61", "Australia", "Австралія"),
+  g("SG", "SG", "65", "Singapore", "Сінгапур", { idd: "001" }),
+  g("AU", "AU", "61", "Australia", "Австралія", { idd: "0011" }),
   g("NZ", "NZ", "64", "New Zealand", "Нова Зеландія"),
   g("ZA", "ZA", "27", "South Africa", "ПАР"),
   g("NG", "NG", "234", "Nigeria", "Нігерія"),
@@ -75,14 +76,14 @@ export const FWD_COUNTRIES: FwdRule[] = [
   g("CL", "CL", "56", "Chile", "Чилі"),
   g("CO", "CO", "57", "Colombia", "Колумбія"),
   g("PE", "PE", "51", "Peru", "Перу"),
-  g("JP", "JP", "81", "Japan", "Японія"),
-  g("KR", "KR", "82", "South Korea", "Південна Корея"),
+  g("JP", "JP", "81", "Japan", "Японія", { idd: "010" }),
+  g("KR", "KR", "82", "South Korea", "Південна Корея", { idd: "001" }),
   g("CN", "CN", "86", "China", "Китай"),
-  g("TW", "TW", "886", "Taiwan", "Тайвань"),
-  g("HK", "HK", "852", "Hong Kong", "Гонконг"),
-  g("US", "US", "1", "United States (GSM)", "США (GSM)"),
+  g("TW", "TW", "886", "Taiwan", "Тайвань", { idd: "002" }),
+  g("HK", "HK", "852", "Hong Kong", "Гонконг", { idd: "001" }),
+  g("US", "US", "1", "United States (GSM)", "США (GSM)", { idd: "011" }),
   g("US72", "US", "1", "United States (*72)", "США (*72)", STAR72),
-  g("CA", "CA", "1", "Canada (GSM)", "Канада (GSM)"),
+  g("CA", "CA", "1", "Canada (GSM)", "Канада (GSM)", { idd: "011" }),
   g("CA72", "CA", "1", "Canada (*72)", "Канада (*72)", STAR72),
 ];
 
@@ -127,6 +128,20 @@ export function fwdDigits(raw: string, rule: FwdRule): string {
 export function fillUssd(tpl: string, digits: string): string {
   if (!tpl) return "";
   return tpl.replace(/\{n\}/g, digits);
+}
+
+/** Digits to put in the code. Home country: the number as-is. Abroad: that country's exit code, then the number. */
+export function forwardDigits(rule: FwdRule, raw: string): string {
+  const s = raw.replace(/\D/g, "");
+  if (!s) return "";
+  if (s.startsWith(rule.cc)) return s;
+  return `${rule.idd}${s}`;
+}
+
+export function filledOn(rule: FwdRule, raw: string): string {
+  const digits = forwardDigits(rule, raw);
+  if (digits.length < 6) return "";
+  return fillUssd(rule.on, digits);
 }
 
 export function ussdOnFor(raw: string, id: string, locale: Locale = "en"): string {

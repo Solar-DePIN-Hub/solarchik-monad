@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AgentDesk } from "@/components/agent-desk";
+import { Booth } from "@/components/secretary/Booth";
 
 export const Route = createFileRoute("/")({ component: Home });
 
 function Home() {
-  return <AgentDesk />;
+  return <Booth />;
 }

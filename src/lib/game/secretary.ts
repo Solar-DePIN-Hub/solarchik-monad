@@ -349,3 +349,138 @@ export function stampMessage(
     read: false,
   };
 }
+
+/** Zadarma line the secretary answers. Same default as the phone app. */
+export const ASSISTANT_LINE = "+380914810885";
+
+/** International only, so the MMI code cannot be altered by the typed text. */
+export function cleanForwardNumber(raw: string): string {
+  let t = raw.trim().replace(/[\s.\-()\u00A0]/g, "");
+  if (t.startsWith("00")) t = `+${t.slice(2)}`;
+  if (!t.startsWith("+")) return "";
+  const digits = t.slice(1);
+  if (!/^[1-9]\d{7,14}$/.test(digits)) return "";
+  return `+${digits}`;
+}
+
+export function forwardOnCode(kind: "61" | "67" | "62", number = ASSISTANT_LINE): string {
+  const n = cleanForwardNumber(number);
+  return n ? `**${kind}*${n}#` : "";
+}
+
+export function forwardOffAll(): string {
+  return "##004#";
+}
+
+export function dialHref(code: string): string {
+  return `tel:${encodeURIComponent(code)}`;
+}
+
+export type LiveCall = {
+  callId: string;
+  caller: string;
+  text: string;
+  at: number;
+  status: string;
+  callerName: string;
+  intent: string;
+  notes: string;
+  callback: string;
+  durationSec: number | null;
+  reason: string;
+};
+
+export type TranscriptLine = { caller: boolean; text: string };
+
+function canonCall(id: string): string {
+  return id.replace(/^(rtc|live)_/, "");
+}
+
+export function parseCalls(raw: unknown): LiveCall[] {
+  const items = raw && typeof raw === "object" ? (raw as { items?: unknown }).items : null;
+  if (!Array.isArray(items)) return [];
+  const all: LiveCall[] = [];
+  for (const row of items) {
+    if (!row || typeof row !== "object") continue;
+    const o = row as Record<string, unknown>;
+    const text = str(o.text);
+    const callId = str(o.callId);
+    if (!text && !callId) continue;
+    const s = o.summary && typeof o.summary === "object" ? (o.summary as Record<string, unknown>) : {};
+    const dur = Number(o.durationSec);
+    all.push({
+      callId,
+      caller: str(o.caller),
+      text: text.slice(0, 600),
+      at: Number(o.at) || 0,
+      status: str(o.status) || (str(o.callId) ? "pending" : "done"),
+      callerName: str(s.caller_name).slice(0, 60),
+      intent: str(s.intent).slice(0, 200),
+      notes: str(s.notes).slice(0, 400),
+      callback: str(s.callback).slice(0, 40),
+      durationSec: Number.isFinite(dur) && dur > 0 ? Math.floor(dur) : null,
+      reason: str(o.reason).slice(0, 40),
+    });
+  }
+  const good = new Set(all.filter((it) => it.callId && it.status !== "failed").map((it) => canonCall(it.callId)));
+  const seen = new Set<string>();
+  const out: LiveCall[] = [];
+  for (const it of all) {
+    if (it.callId && it.status === "failed" && good.has(canonCall(it.callId))) continue;
+    const key = it.callId || `vm:${it.at}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(it);
+  }
+  return out.sort((a, b) => b.at - a.at).slice(0, 40);
+}
+
+export async function listCalls(userId: string): Promise<LiveCall[] | null> {
+  if (!userId.trim()) return null;
+  try {
+    const res = await fetch(`${BASE}/inbox?userId=${encodeURIComponent(userId)}`);
+    if (!res.ok) return null;
+    return parseCalls(await parseJson(res));
+  } catch {
+    return null;
+  }
+}
+
+/** Arms the shared line so the next call is filed under this player. Returns seconds, or null. */
+export async function claimLine(userId: string): Promise<number | null> {
+  if (!userId.trim()) return null;
+  try {
+    const res = await fetch(`${BASE}/call-claim`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    if (!res.ok) return null;
+    const n = Number((await parseJson(res)).armedSec);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function callTranscript(userId: string, callId: string): Promise<TranscriptLine[] | null> {
+  if (!userId.trim() || !callId.trim()) return null;
+  try {
+    const res = await fetch(`${BASE}/call?userId=${encodeURIComponent(userId)}&callId=${encodeURIComponent(callId)}`);
+    if (!res.ok) return null;
+    const lines = (await parseJson(res)).lines;
+    if (!Array.isArray(lines)) return [];
+    const out: TranscriptLine[] = [];
+    for (const row of lines) {
+      if (!row || typeof row !== "object") continue;
+      const o = row as Record<string, unknown>;
+      const text = str(o.text).slice(0, 500);
+      if (!text) continue;
+      out.push({ caller: str(o.who) === "caller", text });
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
