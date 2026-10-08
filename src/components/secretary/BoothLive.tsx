@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from "react";
 import { Phone } from "lucide-react";
 import { parseEther } from "viem";
-import { detectLocale } from "@/lib/game/i18n";
 import {
   ASSISTANT_LINE,
   callTranscript,
@@ -302,7 +301,7 @@ function readLang(): Lang {
   } catch {
     /* ignore */
   }
-  return detectLocale() === "uk" ? "uk" : "en";
+  return "en";
 }
 
 function readTheme(): "night" | "day" {
@@ -355,10 +354,10 @@ function speak(text: string, locale: Lang) {
 const btn = "booth-btn inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-40";
 
 function BoothInner() {
-  const [locale, setLocale] = useState<Lang>("uk");
+  const [locale, setLocale] = useState<Lang>("en");
   const [theme, setTheme] = useState<"night" | "day">("night");
   const [playerId, setPlayerId] = useState("");
-  const [lineLang, setLineLang] = useState<"" | "en" | "uk" | "fail">("");
+  const [lineLang, setLineLang] = useState<"" | "en" | "uk" | "fail">("en");
   const [paidMon, setPaidMon] = useState(0);
   const [spentCalls, setSpentCalls] = useState(0);
   const [draft, setDraft] = useState("");
