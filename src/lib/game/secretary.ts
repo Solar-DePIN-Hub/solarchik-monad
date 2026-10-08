@@ -498,9 +498,10 @@ export async function callTranscript(userId: string, callId: string): Promise<Tr
     for (const row of lines) {
       if (!row || typeof row !== "object") continue;
       const o = row as Record<string, unknown>;
+      const who = str(o.who || o.role || o.from).toLowerCase();
       const text = str(o.text).slice(0, 500);
       if (!text) continue;
-      out.push({ caller: str(o.who) === "caller", text });
+      out.push({ caller: who === "caller" || who === "user" || who === "human" || who === "in", text });
     }
     return out;
   } catch {
