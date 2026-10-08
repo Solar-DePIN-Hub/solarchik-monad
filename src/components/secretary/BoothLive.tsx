@@ -41,6 +41,7 @@ const copy = {
     kicker: "Night booth",
     night: "Night",
     day: "Day",
+    langNote: "The secretary answers in this language.",
     title: "Secretary",
     lead: "The passkey is the account: it makes two keys. A browser wallet only lets us read a pass you already hold. Privy is the payer. It sends test MON to the agent key, so a judge does not need MetaMask.",
     recheck: "Check key",
@@ -130,6 +131,7 @@ const copy = {
     kicker: "Нічна будка",
     night: "Ніч",
     day: "День",
+    langNote: "Секретар відповідає цією мовою.",
     title: "Секретар",
     lead: "Passkey — це рахунок: з нього виходять два ключі. Гаманець браузера лише читає пас, який у тебе вже є. Privy — платник: він шле тестовий MON на ключ агента, тож судді не потрібен MetaMask.",
     recheck: "Перевірити ключ",
@@ -717,7 +719,7 @@ function BoothInner() {
     }
     setLineNote(code);
     nativeUssd(code);
-    const armed = await claimLine(playerId);
+    const armed = await claimLine(playerId, locale);
     setLineNote(armed === null ? `${t.claimMiss} ${code}` : `${t.armed.replace("{n}", String(armed))} ${code}`);
   }
 
@@ -910,6 +912,7 @@ function BoothInner() {
               УК
             </button>
           </div>
+          <p className="booth-muted mt-1 text-right text-xs">{t.langNote}</p>
           <a className="booth-muted px-1 text-xs font-semibold underline" href="/judges">
             {locale === "uk" ? "Суддям" : "Judges"}
           </a>

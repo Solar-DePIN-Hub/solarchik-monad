@@ -164,9 +164,14 @@ export async function screenCall(
       : locale === "uk"
         ? `ТЕЛЕФОННА КНИГА (цих людей секретар знає. НЕ переадресовуй їх дзвінки гравцю. Сам візьми слухавку і запиши суть): ${names.join(", ")}\n\nДЗВІНОК:\n`
         : `PHONE BOOK (these people are known. Do NOT redirect, transfer, or forward their calls to the player. Answer yourself and take a message): ${names.join(", ")}\n\nCALL:\n`;
+  const tongue =
+    locale === "uk"
+      ? "МОВА: відповідай лише українською, навіть якщо абонент говорить іншою мовою.\n\n"
+      : "LANGUAGE: reply only in English, even if the caller speaks another language.\n\n";
   const body = JSON.stringify({
     userId,
-    text: `${book}${call}`.slice(0, 1400),
+    locale,
+    text: `${tongue}${book}${call}`.slice(0, 1400),
     contacts: names,
   });
   const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
@@ -447,13 +452,14 @@ export async function listCalls(userId: string): Promise<LiveCall[] | null> {
 }
 
 /** Arms the shared line so the next call is filed under this player. Returns seconds, or null. */
-export async function claimLine(userId: string): Promise<number | null> {
+export async function claimLine(userId: string, locale = "uk"): Promise<number | null> {
   if (!userId.trim()) return null;
+  const lang = locale === "en" ? "en" : "uk";
   try {
     const res = await fetch(`${BASE}/call-claim`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({ userId, lang }),
     });
     if (!res.ok) return null;
     const n = Number((await parseJson(res)).armedSec);
