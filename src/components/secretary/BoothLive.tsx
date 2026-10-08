@@ -279,8 +279,13 @@ function callKey(id: string): string {
   return id.replace(/^(rtc|live)_/, "");
 }
 
+function inProgress(status: string): boolean {
+  const s = status.toLowerCase();
+  return s === "pending" || s === "live" || s === "active" || s === "ringing" || s === "open" || s === "in-progress" || s === "in_progress" || s === "ongoing";
+}
+
 function finishedCall(status: string): boolean {
-  return status !== "pending" && status !== "failed" && status !== "blocked" && status !== "topup";
+  return !inProgress(status) && status !== "failed" && status !== "blocked" && status !== "topup";
 }
 
 /** Bills a finished phone call once. Calls older than six hours were already in the archive and stay free. */
@@ -588,22 +593,28 @@ function BoothInner() {
 
   const [hideTalk, setHideTalk] = useState(false);
   const [tick, setTick] = useState(0);
+  const wasLive = useRef("");
   useEffect(() => {
     const timer = window.setInterval(() => setTick((n) => n + 1), 1000);
     return () => window.clearInterval(timer);
   }, []);
   const armed = armedUntil > Date.now();
   void tick;
-  const liveCall = calls.find((row) => row.callId && !finishedCall(row.status) && row.status !== "done") ?? null;
-  const fresh = calls.find((row) => {
-    if (!row.callId) return false;
-    const at = row.at > 0 && row.at < 1e12 ? row.at * 1000 : row.at;
-    return at > Date.now() - 3 * 60 * 1000;
-  }) ?? null;
-  const talk = hideTalk ? null : liveCall ?? fresh;
+  const liveCall = calls.find((row) => row.callId && inProgress(row.status)) ?? null;
+  const talk = hideTalk ? null : liveCall;
+  const waiting = armed && !talk && !hideTalk;
 
   useEffect(() => {
-    if (liveCall?.callId) setHideTalk(false);
+    if (liveCall?.callId) {
+      wasLive.current = liveCall.callId;
+      setHideTalk(false);
+      return;
+    }
+    if (wasLive.current) {
+      wasLive.current = "";
+      setHideTalk(true);
+      setLiveLines([]);
+    }
   }, [liveCall?.callId]);
 
   useEffect(() => {
@@ -1047,13 +1058,9 @@ function BoothInner() {
         </button>
         <label className="mt-4 block text-sm font-semibold">
           {t.call}
-          {talk || armed ? (
+          {talk || waiting ? (
             <div ref={talkRef} className="booth-field mt-1 max-h-52 min-h-24 overflow-y-auto rounded-lg px-3 py-2 text-sm font-normal" aria-live="polite">
-              <p className="booth-faint text-xs font-semibold">
-                {talk
-                  ? (talk.callerName || talk.caller || t.caller) + " · " + (talk.status === "pending" || !finishedCall(talk.status) ? t.statusPending : t.statusDone)
-                  : t.listening}
-              </p>
+              <p className="booth-faint text-xs font-semibold">{talk ? (talk.callerName || talk.caller || t.caller) + " · " + t.statusPending : t.listening}</p>
               {talk && liveLines.length === 0 && talk.text ? <p className="mt-2">{talk.text}</p> : null}
               {talk
                 ? liveLines.map((lineRow, i) => (
@@ -1063,7 +1070,7 @@ function BoothInner() {
                     </p>
                   ))
                 : null}
-              {(!talk || liveLines.length === 0) && armed ? <p className="booth-muted mt-2">{t.listening}</p> : null}
+              {waiting ? <p className="booth-muted mt-2">{t.listening}</p> : null}
             </div>
           ) : (
             <textarea
