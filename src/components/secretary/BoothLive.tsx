@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { Phone } from "lucide-react";
-import { PrivyProvider, usePrivy, useSendTransaction, useWallets } from "@privy-io/react-auth";
-import { monadTestnet } from "viem/chains";
 import { parseEther } from "viem";
 import { detectLocale } from "@/lib/game/i18n";
 import {
@@ -24,6 +22,7 @@ import { nativeUssd } from "@/lib/game/buddyNet";
 import { monadAddressUrl, monadTxUrl, connectMonad, readMonBalance } from "@/lib/game/monadClock";
 import { mintUrl, passContract, readPass, type PassRead } from "@/lib/cvi";
 import { createAccount, hasPasskey, openAccount, passkeyFailed } from "@/lib/passkey";
+import { emptyWallet, type WalletApi, type WalletRow } from "./walletApi";
 
 const ID_KEY = "solarchik-secretary-id";
 const LANG_KEY = "solarchik-secretary-lang";
@@ -32,7 +31,6 @@ const LINE_KEY = "solarchik-secretary-line";
 const COUNTRY_KEY = "solarchik-secretary-country";
 const CALLS_KEY = "solarchik-secretary-calls";
 const FAUCET = "https://faucet.monad.xyz";
-const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || "cmutyetdu035e0cjpxez5f3hl";
 
 type Lang = "en" | "uk";
 
@@ -310,10 +308,20 @@ function BoothInner() {
   const [liveLines, setLiveLines] = useState<TranscriptLine[]>([]);
   const talkRef = useRef<HTMLDivElement>(null);
   const [lineNote, setLineNote] = useState("");
-  const { login, ready } = usePrivy();
-  const { sendTransaction } = useSendTransaction();
-  const { wallets } = useWallets();
-  const wallet = wallets.find((row) => row.walletClientType === "privy")?.address ?? wallets[0]?.address ?? "";
+  const sendRef = useRef(emptyWallet.sendTransaction);
+  const loginRef = useRef(emptyWallet.login);
+  const walletsRef = useRef<WalletRow[]>([]);
+  const [ready, setReady] = useState(false);
+  const [wallet, setWallet] = useState("");
+  const takeWallet = useRef((next: WalletApi) => {
+    sendRef.current = next.sendTransaction;
+    loginRef.current = next.login;
+    walletsRef.current = next.wallets;
+    const embedded = next.wallets.find((row) => row.walletClientType === "privy") ?? next.wallets[0];
+    const address = embedded?.address ?? "";
+    setReady((cur) => (cur === next.ready ? cur : next.ready));
+    setWallet((cur) => (cur === address ? cur : address));
+  });
 
   const t = copy[locale];
   const listening = open && busy && !report;
@@ -466,7 +474,7 @@ function BoothInner() {
 
   function connect() {
     if (!ready) return;
-    login();
+    loginRef.current();
   }
 
   async function fundAgent() {
@@ -478,9 +486,9 @@ function BoothInner() {
     setBusy(true);
     setHint("");
     try {
-      const embedded = wallets.find((row) => row.walletClientType === "privy") ?? wallets[0];
+      const embedded = walletsRef.current.find((row) => row.walletClientType === "privy") ?? walletsRef.current[0];
       if (embedded) await embedded.switchChain(10143);
-      const sent = await sendTransaction(
+      const sent = await sendRef.current(
         { to: agent, from: wallet, value: `0x${parseEther("0.01").toString(16)}`, chainId: 10143 },
         { address: wallet },
       );
@@ -680,6 +688,7 @@ function BoothInner() {
 
   return (
     <div className={"booth relative h-dvh w-full overflow-y-auto" + (listening || liveCall ? " is-live" : "")} data-theme={theme}>
+    <PrivyHost onChange={takeWallet.current} />
     <div className="relative mx-auto grid w-full max-w-6xl content-start gap-4 px-4 py-5 sm:px-6 lg:grid-cols-12 lg:gap-5 lg:px-8 lg:py-6">
       <div aria-hidden className="booth-glow pointer-events-none absolute -left-16 top-0 size-72" />
       <header className="relative order-1 flex items-start justify-between gap-3 lg:col-span-12">
@@ -994,16 +1003,14 @@ function BoothInner() {
 }
 
 export function BoothLive() {
-  return (
-    <PrivyProvider
-      appId={PRIVY_APP_ID}
-      config={{
-        defaultChain: monadTestnet,
-        supportedChains: [monadTestnet],
-        embeddedWallets: { ethereum: { createOnLogin: "all-users" } },
-      }}
-    >
-      <BoothInner />
-    </PrivyProvider>
-  );
+  return <BoothInner />;
+}
+
+function PrivyHost({ onChange }: { onChange: (api: WalletApi) => void }) {
+  const [Mount, setMount] = useState<ComponentType<{ onChange: (api: WalletApi) => void }> | null>(null);
+  useEffect(() => {
+    void import("./privyMount").then((mod) => setMount(() => mod.PrivyMount));
+  }, []);
+  if (!Mount) return null;
+  return <Mount onChange={onChange} />;
 }
