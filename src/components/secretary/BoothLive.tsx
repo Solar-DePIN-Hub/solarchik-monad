@@ -359,6 +359,7 @@ function BoothInner() {
   const [theme, setTheme] = useState<"night" | "day">("night");
   const [playerId, setPlayerId] = useState("");
   const [lineLang, setLineLang] = useState<"" | "en" | "uk" | "fail">("");
+  const [paidMon, setPaidMon] = useState(0);
   const [spentCalls, setSpentCalls] = useState(0);
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
