@@ -643,9 +643,14 @@ function BoothInner() {
   }
 
   async function openCall(row: LiveCall) {
+    if (openId === row.callId) {
+      setOpenId("");
+      setLines(null);
+      return;
+    }
     if (!row.callId) {
-      setOpenId(row.callId);
-      setLines([]);
+      setOpenId("");
+      setLines(null);
       return;
     }
     setOpenId(row.callId);
@@ -1083,20 +1088,25 @@ function BoothInner() {
           {calls.map((row) => {
             const who = row.callerName || (row.caller && row.caller !== "unknown" ? row.caller : "");
             const open = openId !== "" && openId === row.callId;
+            const when = row.at
+              ? new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(row.at)
+              : "";
+            const phone = row.caller && row.caller !== "unknown" && row.caller !== who ? row.caller : "";
             return (
               <li key={row.callId || `${row.at}`} className="booth-chip rounded-lg px-3 py-2">
                 <button type="button" className="w-full text-left" onClick={() => void openCall(row)}>
+                  <p className="text-sm font-semibold">{who || t.caller}</p>
                   <p className="booth-faint text-xs font-semibold">
-                    {row.at ? new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(row.at) : ""}
-                    {who ? ` · ${who}` : ""}
+                    {when}
+                    {phone ? ` · ${phone}` : ""}
                     {row.durationSec ? ` · ${clock(row.durationSec)}` : ""}
                     {` · ${statusLabel(row.status, t)}`}
                   </p>
                   {row.intent ? <p className="booth-muted mt-1 text-sm">{row.intent}</p> : null}
-                  {row.text ? <p className="mt-1 text-sm">{row.text}</p> : null}
                 </button>
+                {open && lines === null ? <p className="booth-muted mt-2 text-sm">…</p> : null}
                 {open && lines && lines.length > 0 ? (
-                  <div className="mt-2 grid gap-1">
+                  <div className="mt-2 grid gap-1 border-t border-white/10 pt-2">
                     {lines.map((lineRow, i) => (
                       <p key={`${row.callId}-${i}`} className="text-sm">
                         <span className="booth-faint font-semibold">{lineRow.caller ? who || t.caller : t.sol}: </span>
