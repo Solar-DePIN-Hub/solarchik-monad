@@ -40,9 +40,10 @@ const copy = {
     night: "Night",
     day: "Day",
     title: "Secretary",
-    lead: "One passkey makes two keys. The line arms only when the chain shows an open pass on your key or on a browser wallet you connect.",
+    lead: "The passkey is the account: it makes two keys. A browser wallet only lets us read a pass you already hold. Privy is the payer. It sends test MON to the agent key, so a judge does not need MetaMask.",
     recheck: "Check key",
     browser: "Check browser wallet",
+    browserShort: "Browser",
     noBrowser: "No browser wallet.",
     chain: "Chain",
     credit: "Credit",
@@ -67,14 +68,15 @@ const copy = {
     funded: "Sent to the agent key.",
     txFail: "The transfer did not send.",
     needAgent: "Open the passkey first.",
+    needPrivy: "Connect Privy first. The browser wallet does not pay the agent.",
     keyYou: "You · …/0",
     keyAgent: "Agent · …/1",
-    pay: "Agent wallet",
+    pay: "Privy",
     connect: "Connect Privy",
     noWallet: "Not connected.",
     mon: "MON",
     faucet: "Test MON",
-    note: "Monad testnet. Test MON does not buy call credit.",
+    note: "Privy is not the account and not the agent key. It only sends 0.01 test MON to the agent.",
     pass: "Pass",
     passOpen: "Pass open",
     passClosed: "No pass",
@@ -118,9 +120,10 @@ const copy = {
     night: "Ніч",
     day: "День",
     title: "Секретар",
-    lead: "Один passkey дає два ключі. Лінія стає на облік лише коли мережа показує відкритий пас на твоєму ключі або на гаманці браузера, який ти підключив.",
+    lead: "Passkey — це рахунок: з нього виходять два ключі. Гаманець браузера лише читає пас, який у тебе вже є. Privy — платник: він шле тестовий MON на ключ агента, тож судді не потрібен MetaMask.",
     recheck: "Перевірити ключ",
     browser: "Перевірити гаманець",
+    browserShort: "Браузер",
     noBrowser: "Немає гаманця в браузері.",
     chain: "Мережа",
     credit: "Кредит",
@@ -145,14 +148,15 @@ const copy = {
     funded: "Надіслано на ключ агента.",
     txFail: "Переказ не пішов.",
     needAgent: "Спочатку passkey.",
+    needPrivy: "Спочатку Privy. Гаманець браузера агенту не платить.",
     keyYou: "Ти · …/0",
     keyAgent: "Агент · …/1",
-    pay: "Гаманець агента",
+    pay: "Privy",
     connect: "Підключити Privy",
     noWallet: "Не підключений.",
     mon: "MON",
     faucet: "Тестовий MON",
-    note: "Тестнет Monad. Тестовий MON кредит дзвінка не купує.",
+    note: "Privy — не рахунок і не ключ агента. Він лише шле 0.01 тестового MON агенту.",
     pass: "Пас",
     passOpen: "Пас відкритий",
     passClosed: "Паса немає",
@@ -313,11 +317,12 @@ function BoothInner() {
   const walletsRef = useRef<WalletRow[]>([]);
   const [ready, setReady] = useState(false);
   const [wallet, setWallet] = useState("");
+  const [browser, setBrowser] = useState("");
   const takeWallet = useRef((next: WalletApi) => {
     sendRef.current = next.sendTransaction;
     loginRef.current = next.login;
     walletsRef.current = next.wallets;
-    const embedded = next.wallets.find((row) => row.walletClientType === "privy") ?? next.wallets[0];
+    const embedded = next.wallets.find((row) => row.walletClientType === "privy");
     const address = embedded?.address ?? "";
     setReady((cur) => (cur === next.ready ? cur : next.ready));
     setWallet((cur) => (cur === address ? cur : address));
@@ -482,12 +487,15 @@ function BoothInner() {
       setHint(t.needAgent);
       return;
     }
-    if (!wallet || busy) return;
+    const embedded = walletsRef.current.find((row) => row.walletClientType === "privy");
+    if (!embedded || !wallet || busy) {
+      setHint(t.needPrivy);
+      return;
+    }
     setBusy(true);
     setHint("");
     try {
-      const embedded = walletsRef.current.find((row) => row.walletClientType === "privy") ?? walletsRef.current[0];
-      if (embedded) await embedded.switchChain(10143);
+      await embedded.switchChain(10143);
       const sent = await sendRef.current(
         { to: agent, from: wallet, value: `0x${parseEther("0.01").toString(16)}`, chainId: 10143 },
         { address: wallet },
@@ -601,7 +609,10 @@ function BoothInner() {
     setHint("");
     const out = await connectMonad();
     if (!out.ok) setHint(out.error === "no-wallet" ? t.noBrowser : t.accountCancel);
-    else await lookPass(out.address);
+    else {
+      setBrowser(out.address);
+      await lookPass(out.address);
+    }
     setBusy(false);
   }
 
@@ -893,6 +904,7 @@ function BoothInner() {
             {holder ? ` · ${shortHex(holder)}` : ""}
           </p>
         ) : null}
+        {browser ? <p className="mt-1 font-mono text-sm font-semibold">{t.browserShort}: {shortHex(browser)}</p> : null}
         <p className="booth-muted mt-1 text-sm">{t.seed}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <button type="button" className={btn + " bg-primary text-primary-fg"} disabled={busy} onClick={() => void accountClick()}>
