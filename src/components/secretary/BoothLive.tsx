@@ -595,38 +595,46 @@ function BoothInner() {
     sawArchive.current = true;
     setOpenId(newest.callId);
   }, [calls, openId, playerId]);
+  const [followId, setFollowId] = useState("");
   const armed = armedUntil > Date.now();
   void tick;
   const liveCall = calls.find((row) => row.callId && inProgress(row.status)) ?? null;
-  const talk = hideTalk ? null : liveCall;
+  const follow = calls.find((row) => row.callId === followId) ?? null;
+  const talk = hideTalk ? null : liveCall ?? follow;
   const waiting = armed && !talk && !hideTalk;
 
   useEffect(() => {
     if (liveCall?.callId) {
       wasLive.current = liveCall.callId;
+      setFollowId(liveCall.callId);
       setHideTalk(false);
       return;
     }
-    if (wasLive.current) {
-      const id = wasLive.current;
-      wasLive.current = "";
-      setHideTalk(true);
-      setLiveLines([]);
-      setOpenId(id);
-      if (playerId) void callTranscript(playerId, id).then((rows) => { if (rows && rows.length) setLines(rows); });
-    }
-  }, [liveCall?.callId, playerId]);
+    if (!wasLive.current) return;
+    const id = wasLive.current;
+    wasLive.current = "";
+    setFollowId(id);
+    setOpenId(id);
+  }, [liveCall?.callId]);
 
   useEffect(() => {
-    if (!playerId || !talk?.callId) {
-      setLiveLines([]);
-      return;
-    }
+    if (liveCall || !followId || hideTalk) return;
+    const wait = liveLines.length >= 3 ? 4000 : 15000;
+    const timer = window.setTimeout(() => {
+      setHideTalk(true);
+      setFollowId("");
+    }, wait);
+    return () => window.clearTimeout(timer);
+  }, [liveCall, followId, hideTalk, liveLines.length]);
+
+  useEffect(() => {
+    if (!playerId || !talk?.callId) return;
     const id = talk.callId;
     let on = true;
+    setLiveLines([]);
     const pull = () => {
       void callTranscript(playerId, id).then((rows) => {
-        if (on && rows) setLiveLines(rows);
+        if (on && rows && rows.length) setLiveLines((prev) => (rows.length >= prev.length ? rows : prev));
       });
     };
     pull();
@@ -647,7 +655,7 @@ function BoothInner() {
     let on = true;
     const pull = () => {
       void callTranscript(playerId, openId).then((rows) => {
-        if (on && rows && rows.length) setLines(rows);
+        if (on && rows && rows.length) setLines((prev) => (rows.length >= (prev?.length ?? 0) ? rows : prev));
       });
     };
     pull();
@@ -1074,17 +1082,14 @@ function BoothInner() {
           {t.call}
           {talk || waiting ? (
             <div ref={talkRef} className="booth-field mt-1 max-h-52 min-h-24 overflow-y-auto rounded-lg px-3 py-2 text-sm font-normal" aria-live="polite">
-              <p className="booth-faint text-xs font-semibold">{talk ? (talk.callerName || talk.caller || t.caller) + " · " + t.statusPending : t.listening}</p>
-              {talk && liveLines.length === 0 && talk.text ? <p className="mt-2">{talk.text}</p> : null}
-              {talk
-                ? liveLines.map((lineRow, i) => (
-                    <p key={`${talk.callId}-${i}`} className="mt-2">
-                      <span className="booth-faint font-semibold">{lineRow.caller ? talk.callerName || talk.caller || t.caller : t.sol}: </span>
-                      {lineRow.text}
-                    </p>
-                  ))
-                : null}
-              {waiting ? <p className="booth-muted mt-2">{t.listening}</p> : null}
+              <p className="booth-faint text-xs font-semibold">{talk ? (talk.callerName || talk.caller || t.caller) + " · " + (inProgress(talk.status) ? t.statusPending : statusLabel(talk.status, t)) : ""}</p>
+              {liveLines.filter((lineRow) => lineRow.text.trim().length > 1).map((lineRow, i) => (
+                <p key={`${talk?.callId ?? "wait"}-${i}`} className="mt-2">
+                  <span className="booth-faint font-semibold">{lineRow.caller ? talk?.callerName || talk?.caller || t.caller : t.sol}: </span>
+                  {lineRow.text}
+                </p>
+              ))}
+              {liveLines.filter((lineRow) => lineRow.text.trim().length > 1).length === 0 ? <p className="booth-muted mt-2">{t.listening}</p> : null}
             </div>
           ) : (
             <textarea
@@ -1317,12 +1322,11 @@ function BoothInner() {
                     {row.durationSec ? ` · ${clock(row.durationSec)}` : ""}
                     {` · ${statusLabel(row.status, t)}`}
                   </p>
-                  {row.intent && !/[А-Яа-яІіЇїЄєҐґ]/.test(row.intent) ? <p className="booth-muted mt-1 text-sm">{row.intent}</p> : null}
                 </button>
                 {open && lines === null ? <p className="booth-muted mt-2 text-sm">…</p> : null}
                 {open && lines && lines.length > 0 ? (
                   <div className="mt-2 grid gap-1 border-t border-white/10 pt-2">
-                    {lines.map((lineRow, i) => (
+                    {lines.filter((lineRow) => lineRow.text.trim().length > 1).map((lineRow, i) => (
                       <p key={`${row.callId}-${i}`} className="text-sm">
                         <span className="booth-faint font-semibold">{lineRow.caller ? who || t.caller : t.sol}: </span>
                         {lineRow.text}
