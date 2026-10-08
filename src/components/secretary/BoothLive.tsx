@@ -25,6 +25,8 @@ import { createAccount, hasPasskey, openAccount, passkeyFailed } from "@/lib/pas
 import { emptyWallet, type WalletApi, type WalletRow } from "./walletApi";
 
 const ID_KEY = "solarchik-secretary-id";
+const SESSION_KEY = "solarchik-booth-session";
+const SESSION_MS = 12 * 60 * 60 * 1000;
 const LANG_KEY = "solarchik-secretary-lang";
 const THEME_KEY = "solarchik-secretary-theme";
 const LINE_KEY = "solarchik-secretary-line";
@@ -201,6 +203,26 @@ const copy = {
   },
 } as const;
 
+function readSession(): { person: string; agent: string; browser: string } | null {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SESSION_KEY) || "") as { person?: unknown; agent?: unknown; browser?: unknown; at?: unknown };
+    if (typeof raw.at !== "number" || Date.now() - raw.at > SESSION_MS) return null;
+    const hex = (value: unknown) => (typeof value === "string" && /^0x[a-fA-F0-9]{40}$/.test(value) ? value : "");
+    const person = hex(raw.person);
+    const agent = hex(raw.agent);
+    if (!person || !agent) return null;
+    return { person, agent, browser: hex(raw.browser) };
+  } catch {
+    return null;
+  }
+}
+
+function remember(person: string, agent: string, browser: string) {
+  if (!/^0x[a-fA-F0-9]{40}$/.test(person) || !/^0x[a-fA-F0-9]{40}$/.test(agent)) return;
+  const next = /^0x[a-fA-F0-9]{40}$/.test(browser) ? browser : "";
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ person, agent, browser: next, at: Date.now() }));
+}
+
 function readId(): string {
   try {
     const own = localStorage.getItem(ID_KEY);
@@ -354,6 +376,13 @@ function BoothInner() {
     void mintUrl().then(setMint);
     void passContract().then((value) => setContract(value || ""));
     setSaved(hasPasskey());
+    const session = readSession();
+    if (session) {
+      setAccount(session.person);
+      setAgent(session.agent);
+      if (session.browser) setBrowser(session.browser);
+      remember(session.person, session.agent, session.browser);
+    }
     try {
       const savedLine = localStorage.getItem(LINE_KEY) || "";
       const id = readFwdId(localStorage.getItem(COUNTRY_KEY), lang);
@@ -380,21 +409,22 @@ function BoothInner() {
   }, [wallet]);
 
   useEffect(() => {
-    if (!account) {
+    const who = browser || account;
+    if (!who) {
       setPass("wait");
       return;
     }
     let live = true;
     setPass("wait");
-    void readPass(account).then((row) => {
+    void readPass(who).then((row) => {
       if (!live) return;
       setPass(row);
-      setHolder(row?.open ? account : "");
+      setHolder(row?.open ? who : "");
     });
     return () => {
       live = false;
     };
-  }, [account]);
+  }, [account, browser]);
 
   useEffect(() => {
     if (!agent) {
@@ -617,6 +647,7 @@ function BoothInner() {
     else {
       setBrowser(out.address);
       setWalletChoices([]);
+      remember(account, agent, out.address);
       await lookPass(out.address);
     }
     setBusy(false);
@@ -632,6 +663,7 @@ function BoothInner() {
       if (!out.ok) setHint(out.error === "no-wallet" ? t.noBrowser : t.accountCancel);
       else {
         setBrowser(out.address);
+        remember(account, agent, out.address);
         await lookPass(out.address);
       }
       setBusy(false);
@@ -653,6 +685,7 @@ function BoothInner() {
       setAccount(keys.person);
       setAgent(keys.agent);
       setSaved(true);
+      remember(keys.person, keys.agent, browser);
     } catch (error) {
       setHint(passkeyFailed(error) === "cancel" ? t.accountCancel : t.accountFail);
     }
