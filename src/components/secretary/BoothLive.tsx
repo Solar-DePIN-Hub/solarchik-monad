@@ -580,10 +580,21 @@ function BoothInner() {
   const [hideTalk, setHideTalk] = useState(false);
   const [tick, setTick] = useState(0);
   const wasLive = useRef("");
+  const sawArchive = useRef(false);
   useEffect(() => {
     const timer = window.setInterval(() => setTick((n) => n + 1), 1000);
     return () => window.clearInterval(timer);
   }, []);
+  useEffect(() => {
+    if (sawArchive.current || openId || !playerId) return;
+    const newest = calls.find((row) => {
+      const at = row.at > 0 && row.at < 1e12 ? row.at * 1000 : row.at;
+      return Boolean(row.callId) && finishedCall(row.status) && at > Date.now() - 20 * 60 * 60 * 1000;
+    });
+    if (!newest?.callId) return;
+    sawArchive.current = true;
+    setOpenId(newest.callId);
+  }, [calls, openId, playerId]);
   const armed = armedUntil > Date.now();
   void tick;
   const liveCall = calls.find((row) => row.callId && inProgress(row.status)) ?? null;
@@ -597,11 +608,14 @@ function BoothInner() {
       return;
     }
     if (wasLive.current) {
+      const id = wasLive.current;
       wasLive.current = "";
       setHideTalk(true);
       setLiveLines([]);
+      setOpenId(id);
+      if (playerId) void callTranscript(playerId, id).then((rows) => { if (rows && rows.length) setLines(rows); });
     }
-  }, [liveCall?.callId]);
+  }, [liveCall?.callId, playerId]);
 
   useEffect(() => {
     if (!playerId || !talk?.callId) {
@@ -616,7 +630,7 @@ function BoothInner() {
       });
     };
     pull();
-    const timer = window.setInterval(pull, 2000);
+    const timer = window.setInterval(pull, 1000);
     return () => {
       on = false;
       window.clearInterval(timer);
@@ -627,6 +641,22 @@ function BoothInner() {
     const el = talkRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [liveLines]);
+
+  useEffect(() => {
+    if (!playerId || !openId) return;
+    let on = true;
+    const pull = () => {
+      void callTranscript(playerId, openId).then((rows) => {
+        if (on && rows && rows.length) setLines(rows);
+      });
+    };
+    pull();
+    const timer = window.setInterval(pull, 2000);
+    return () => {
+      on = false;
+      window.clearInterval(timer);
+    };
+  }, [playerId, openId]);
 
   function choose(lang: Lang) {
     setLocale(lang);
@@ -1267,7 +1297,10 @@ function BoothInner() {
         {callsState === "miss" ? <p className="booth-gold mt-2 text-sm font-semibold">{calls.length ? t.archiveMiss : t.archiveDown}</p> : null}
         {callsState === "ok" && calls.length === 0 ? <p className="booth-muted mt-2 text-sm">{t.archiveEmpty}</p> : null}
         <ul className="mt-3 flex flex-col gap-2">
-          {calls.map((row) => {
+          {calls.filter((row) => {
+            const at = row.at > 0 && row.at < 1e12 ? row.at * 1000 : row.at;
+            return !at || at > Date.now() - 20 * 60 * 60 * 1000;
+          }).map((row) => {
             const who = row.callerName || (row.caller && row.caller !== "unknown" ? row.caller : "");
             const open = openId !== "" && openId === row.callId;
             const when = row.at
@@ -1284,7 +1317,7 @@ function BoothInner() {
                     {row.durationSec ? ` · ${clock(row.durationSec)}` : ""}
                     {` · ${statusLabel(row.status, t)}`}
                   </p>
-                  {row.intent ? <p className="booth-muted mt-1 text-sm">{row.intent}</p> : null}
+                  {row.intent && !/[А-Яа-яІіЇїЄєҐґ]/.test(row.intent) ? <p className="booth-muted mt-1 text-sm">{row.intent}</p> : null}
                 </button>
                 {open && lines === null ? <p className="booth-muted mt-2 text-sm">…</p> : null}
                 {open && lines && lines.length > 0 ? (

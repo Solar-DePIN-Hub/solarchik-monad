@@ -487,23 +487,38 @@ export async function claimLine(userId: string, _locale = "uk"): Promise<number 
   }
 }
 
+function twinId(id: string): string {
+  if (id.startsWith("rtc_")) return `live_${id.slice(4)}`;
+  if (id.startsWith("live_")) return `rtc_${id.slice(5)}`;
+  return "";
+}
+
+async function pullLines(userId: string, callId: string): Promise<TranscriptLine[] | null> {
+  const res = await fetch(`${BASE}/call?userId=${encodeURIComponent(userId)}&callId=${encodeURIComponent(callId)}`);
+  if (!res.ok) return null;
+  const lines = (await parseJson(res)).lines;
+  if (!Array.isArray(lines)) return [];
+  const out: TranscriptLine[] = [];
+  for (const row of lines) {
+    if (!row || typeof row !== "object") continue;
+    const o = row as Record<string, unknown>;
+    const who = str(o.who || o.role || o.from).toLowerCase();
+    const text = str(o.text).slice(0, 500);
+    if (!text) continue;
+    out.push({ caller: who === "caller" || who === "user" || who === "human" || who === "in", text });
+  }
+  return out;
+}
+
 export async function callTranscript(userId: string, callId: string): Promise<TranscriptLine[] | null> {
   if (!userId.trim() || !callId.trim()) return null;
   try {
-    const res = await fetch(`${BASE}/call?userId=${encodeURIComponent(userId)}&callId=${encodeURIComponent(callId)}`);
-    if (!res.ok) return null;
-    const lines = (await parseJson(res)).lines;
-    if (!Array.isArray(lines)) return [];
-    const out: TranscriptLine[] = [];
-    for (const row of lines) {
-      if (!row || typeof row !== "object") continue;
-      const o = row as Record<string, unknown>;
-      const who = str(o.who || o.role || o.from).toLowerCase();
-      const text = str(o.text).slice(0, 500);
-      if (!text) continue;
-      out.push({ caller: who === "caller" || who === "user" || who === "human" || who === "in", text });
-    }
-    return out;
+    const first = await pullLines(userId, callId);
+    const other = twinId(callId);
+    const second = other ? await pullLines(userId, other) : null;
+    if (!first) return second;
+    if (!second) return first;
+    return second.length > first.length ? second : first;
   } catch {
     return null;
   }
