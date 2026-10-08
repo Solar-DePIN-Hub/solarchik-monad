@@ -10,102 +10,106 @@ const copy = {
   en: {
     kicker: "Monad testnet · chain 10143",
     title: "Solarchik architecture",
-    lead: "What this repository does on Monad testnet. The path to show is the yard, the run, the day close, and the work desk.",
-    live: "On Monad",
+    lead: "The judge path is the night booth on the home page. One passkey makes two keys. A pass arms the phone line. Privy pays the agent key.",
+    live: "Earlier contracts, not the call",
     device: "On this device",
     absent: "Not in this build",
+    deviceBody: "The passkey stays in this browser. Call credit is the list of verified top-up hashes kept on this device.",
+    absentBody: "No Android package. No seed on screen. No order. Test MON from the faucet does not buy a call.",
     back: "Judges",
     sections: [
       {
         n: "1",
-        title: "System",
-        body: "The player opens the web app. MetaMask switches to Monad testnet. The yard, roof run, friend, shop and work desk are this app. There is no Android APK and no Seed Vault.",
+        title: "Booth",
+        body: "Home is the night booth. The line is +380914810885. A call is 0.01 MON. The yard, the roof run, and the work desk are still in the repo. They are not the judge path.",
       },
       {
         n: "2",
-        title: "On-chain data",
-        body: "Four contracts. Streak stores the daily check-in. Strategy is the ERC-721 paper agent. Suns records suns after Allow sun recording on the desk. The Agent contract is deployed, and the desk does not call recordPaper.",
+        title: "Passkey",
+        body: "One passkey makes two keys: person at m/44'/60'/0'/0/0 and agent at index 1. Each key signs its own message and the signature has to match. No seed is shown. The credential does not travel to another browser.",
       },
       {
         n: "3",
-        title: "Mint",
-        body: "The work desk lists the same four agents as the original desk: Bitcoin Windows #11, Events Scout #04, Weather Station, and Combo Prime. Take and work signs mint on Monad testnet. Gas is the only cost. The contract does not charge 0.1 MON and does not place an order.",
+        title: "Pass",
+        body: "Cleanverse names the Monad testnet A-Pass contract. The booth reads getAPassData. The pass is open only when status is 1 and the expiration word is still in the future. A revert, including 0xfb524a44, stays closed. A browser wallet can only be read. It cannot pay.",
       },
       {
         n: "4",
-        title: "Who signs",
-        body: "There is no server co-sign and no Metaplex. The player wallet is the owner of the NFT. tokenURI is JSON on the contract and says the strategy is paper.",
+        title: "Privy",
+        body: "Privy is not the account. Top up sends 0.05 MON from the embedded wallet to the agent key. That is 5 calls. The booth counts them only after the transfer is on chain. Send 0.01 MON is one call, not the five-call top-up.",
       },
       {
         n: "5",
-        title: "Desk shift",
-        body: "Start and stop stay in the browser. Asking for a 1, 5, 10, or 15 minute window shows a confirmation card, and signing it calls updateStrategy on that NFT, which locks transfers for 240 hours. Monad testnet has no Chainlink feed in this app, so the desk does not open a position and does not send an order.",
+        title: "Line",
+        body: "Turn on is refused until the pass is open. The phone must confirm the carrier code. Nothing is forwarded until it does. Claiming the shared line does not spend a call.",
       },
       {
         n: "6",
-        title: "Day and suns",
-        body: "A roof run of 1200 m unlocks the day. Closing it calls checkIn() once per 24 hours. A second call in that window reverts. Suns on the yard stay on the device until Allow sun recording on the work desk. That signs authorize and funds 0.02 MON. The next run can call recordSuns. Pause on a strategy card stays in the browser.",
+        title: "Archive",
+        body: "A row appears only after the assistant answers. The booth does not invent a transcript. If the archive request fails, the booth says so and shows the last list saved in this browser.",
       },
       {
         n: "7",
-        title: "Sol",
-        body: "The friend chat is in the app. With no model key it is labelled offline demo and does not invent market numbers.",
+        title: "English",
+        body: "The judge path is English. EN is the line language. Ukrainian copy remains on this page and on the judges page.",
       },
       {
         n: "8",
-        title: "Secretary",
-        body: "The phone secretary, USDC credit and call notes are not in this Monad build. There is no number and no payment path for them.",
+        title: "Left behind",
+        body: "Streak, Strategy, Suns, and Agent are deployed and left in place. They do not price a call, hold the pass, or store the transcript.",
       },
     ],
   },
   uk: {
     kicker: "Monad testnet · мережа 10143",
     title: "Архітектура Solarchik",
-    lead: "Що цей репозиторій робить на Monad testnet. Шлях для показу: двір, забіг, закрити день і стіл.",
-    live: "У Monad",
-    device: "На пристрої",
+    lead: "Шлях для судді — нічна кабіна на головній. Один passkey дає два ключі. Пас вмикає лінію. Privy платить ключу агента.",
+    live: "Старі контракти, не дзвінок",
+    device: "На цьому пристрої",
     absent: "Цього в збірці немає",
+    deviceBody: "Passkey лишається в цьому браузері. Кредит дзвінка — це список перевірених поповнень, збережений на пристрої.",
+    absentBody: "Немає Android-пакета. Сід на екран не виводиться. Немає ордера. Тестовий MON з крана не купує дзвінок.",
     back: "Суддям",
     sections: [
       {
         n: "1",
-        title: "Система",
-        body: "Гравець відкриває вебзастосунок. MetaMask перемикається на Monad testnet. Двір, забіг, друг, магазин і стіл — це цей застосунок. APK і Seed Vault немає.",
+        title: "Кабіна",
+        body: "Головна — це нічна кабіна. Номер +380914810885. Дзвінок коштує 0.01 MON. Двір, забіг і стіл лишилися в репозиторії. Це не шлях для судді.",
       },
       {
         n: "2",
-        title: "Дані в мережі",
-        body: "Чотири контракти. Streak тримає денну відмітку. Strategy — це ERC-721 паперового агента. Suns пише сонця після кнопки «Дозволити запис сонць» на столі. Контракт Agent розгорнуто, і стіл не кличе recordPaper.",
+        title: "Passkey",
+        body: "Один passkey робить два ключі: людина на m/44'/60'/0'/0/0 і агент на індексі 1. Кожен ключ підписує своє повідомлення, і підпис має збігтися. Сід не показується. Ключ не переїжджає в інший браузер.",
       },
       {
         n: "3",
-        title: "Мінт",
-        body: "Стіл показує ті самі чотири агенти, що й оригінал: Bitcoin Windows #11, Events Scout #04, Weather Station і Combo Prime. «Взяти і працювати» підписує mint на Monad testnet. Платиться лише газ. Контракт не бере 0.1 MON і не відкриває угоду.",
+        title: "Пас",
+        body: "Cleanverse називає контракт A-Pass на Monad testnet. Кабіна читає getAPassData. Пас відкритий лише коли статус 1 і слово строку дії ще в майбутньому. Реверт, зокрема 0xfb524a44, лишає пас закритим. Браузерний гаманець лише читається. Він не платить.",
       },
       {
         n: "4",
-        title: "Хто підписує",
-        body: "Немає підпису сервера і немає Metaplex. Власник NFT — гаманець гравця. tokenURI — це JSON у контракті, і там написано, що стратегія паперова.",
+        title: "Privy",
+        body: "Privy не є рахунком. Поповнення шле 0.05 MON з вбудованого гаманця на ключ агента. Це 5 дзвінків. Кабіна рахує їх лише після транзакції в мережі. Надіслати 0.01 MON — це один дзвінок, не п'ять.",
       },
       {
         n: "5",
-        title: "Зміна столу",
-        body: "Старт і пауза лишаються в браузері. Прохання про вікно на 1, 5, 10 або 15 хвилин показує картку, і підпис кличе updateStrategy на цьому NFT: продаж блокується на 240 годин. Фіда Chainlink на Monad testnet у цьому застосунку немає, тож стіл не відкриває позицію і не шле ордер.",
+        title: "Лінія",
+        body: "Увімкнути не можна, поки пас закритий. Телефон має підтвердити код оператора. Нічого не переадресовано, поки він цього не зробить. Захоплення спільної лінії не списує дзвінок.",
       },
       {
         n: "6",
-        title: "День і сонця",
-        body: "Забіг на 1200 м відкриває день. Закриття кличе checkIn() раз на 24 години. Другий виклик у цьому вікні контракт відхиляє. Сонця на дворі лишаються на пристрої, поки на столі не натиснуто «Дозволити запис сонць». Це підпис authorize і 0.02 MON. Наступний забіг може кликати recordSuns. Пауза на картці стратегії лишається в браузері.",
+        title: "Архів",
+        body: "Рядок з'являється лише після того, як помічник відповів. Кабіна не вигадує розмову. Якщо архів не відкрився, вона так і каже і показує останній список із цього браузера.",
       },
       {
         n: "7",
-        title: "Сол",
-        body: "Чат друга є в застосунку. Без ключа моделі він позначений offline demo і не вигадує ринкові числа.",
+        title: "Англійська",
+        body: "Шлях для судді англійською. EN — це мова лінії. Український текст лишається на цій сторінці і на сторінці для суддів.",
       },
       {
         n: "8",
-        title: "Секретар",
-        body: "Телефонний секретар, кредит USDC і нотатки дзвінків у цю збірку Monad не входять. Номера і оплати для них немає.",
+        title: "Залишилось позаду",
+        body: "Streak, Strategy, Suns і Agent розгорнуті і лишаються на місці. Вони не беруть плату за дзвінок, не тримають пас і не зберігають розмову.",
       },
     ],
   },
@@ -153,9 +157,9 @@ function ArchitecturePage() {
           ))}
         </ul>
         <p className="mt-3 font-semibold">{t.device}</p>
-        <p className="mt-1 text-ink-soft">{lang === "en" ? "Roof score, suns before a session, agent start and stop, Sol when no model key is set." : "Рахунок забігу, сонця до сесії, старт і пауза агента, Сол без ключа."}</p>
+        <p className="mt-1 text-ink-soft">{t.deviceBody}</p>
         <p className="mt-3 font-semibold">{t.absent}</p>
-        <p className="mt-1 text-ink-soft">{lang === "en" ? "Android package, phone secretary, paid pro mint, and any order." : "Android-пакет, телефонний секретар, платний pro-мінт і будь-який ордер."}</p>
+        <p className="mt-1 text-ink-soft">{t.absentBody}</p>
       </section>
       {t.sections.map((section) => (
         <section key={section.n} className="card p-4">
