@@ -679,9 +679,10 @@ function BoothInner() {
   const creditLabel = creditState === "load" ? "…" : creditState === "ok" && credit !== null ? money(credit) : "—";
 
   return (
-    <div className={"booth relative mx-auto grid h-dvh w-full max-w-3xl content-start gap-3 overflow-y-auto px-4 pb-8 pt-5 sm:grid-cols-2" + (listening || liveCall ? " is-live" : "")} data-theme={theme}>
+    <div className={"booth relative h-dvh w-full overflow-y-auto" + (listening || liveCall ? " is-live" : "")} data-theme={theme}>
+    <div className="relative mx-auto grid w-full max-w-6xl content-start gap-4 px-4 py-5 sm:px-6 lg:grid-cols-12 lg:gap-5 lg:px-8 lg:py-6">
       <div aria-hidden className="booth-glow pointer-events-none absolute -left-16 top-0 size-72" />
-      <header className="relative order-1 flex items-start justify-between gap-3 sm:col-span-2">
+      <header className="relative order-1 flex items-start justify-between gap-3 lg:col-span-12">
         <div>
           <p className="booth-gold text-xs font-semibold uppercase tracking-[0.18em]">{t.kicker}</p>
           <h1 className="font-display mt-1 text-4xl leading-none">{t.title}</h1>
@@ -703,10 +704,13 @@ function BoothInner() {
               УК
             </button>
           </div>
+          <a className="booth-muted px-1 text-xs font-semibold underline" href="/judges">
+            {locale === "uk" ? "Суддям" : "Judges"}
+          </a>
         </div>
       </header>
-      <p className="booth-muted relative order-2 text-sm leading-relaxed sm:col-span-2">{t.lead}</p>
-      <div className="relative order-3 grid grid-cols-2 gap-2 sm:col-span-2 sm:grid-cols-4">
+      <p className="booth-muted relative order-2 max-w-3xl text-sm leading-relaxed lg:col-span-12">{t.lead}</p>
+      <div className="relative order-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:col-span-12">
         <div className="booth-chip rounded-lg px-3 py-2">
           <p className="booth-faint text-xs font-semibold uppercase tracking-wide">{t.account}</p>
           <p className="truncate text-sm font-semibold">{account ? shortHex(account) : t.noAccount}</p>
@@ -725,7 +729,7 @@ function BoothInner() {
         </div>
       </div>
 
-      <section className="booth-card relative order-5 rounded-xl p-5" style={{ animationDelay: "40ms" }}>
+      <section className="booth-card relative order-4 rounded-xl p-5 lg:order-5 lg:col-span-7" style={{ animationDelay: "40ms" }}>
         <div className="booth-handset relative mx-auto grid size-24 place-items-center">
           <span className="booth-ring" aria-hidden />
           <span className="booth-ring booth-ring-late" aria-hidden />
@@ -849,7 +853,7 @@ function BoothInner() {
         {note ? <p className="booth-gold mt-3 text-sm font-semibold">{note}</p> : null}
       </section>
 
-      <div className="order-4 flex flex-col gap-3">
+      <div className="order-5 flex flex-col gap-3 lg:order-4 lg:col-span-5">
       <section className="booth-card relative rounded-xl p-4" style={{ animationDelay: "120ms" }}>
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-2xl">{t.account}</h2>
@@ -949,7 +953,7 @@ function BoothInner() {
         ) : null}
       </section>
       </div>
-      <section className="booth-card relative order-6 rounded-xl p-4 sm:col-span-2" style={{ animationDelay: "260ms" }}>
+      <section className="booth-card relative order-6 rounded-xl p-4 lg:col-span-12" style={{ animationDelay: "260ms" }}>
         <h2 className="font-display text-2xl">{t.archive}</h2>
         {callsState === "miss" ? <p className="booth-gold mt-2 text-sm font-semibold">{calls.length ? t.archiveMiss : t.archiveDown}</p> : null}
         {callsState === "ok" && calls.length === 0 ? <p className="booth-muted mt-2 text-sm">{t.archiveEmpty}</p> : null}
@@ -984,6 +988,7 @@ function BoothInner() {
           })}
         </ul>
       </section>
+    </div>
     </div>
   );
 }

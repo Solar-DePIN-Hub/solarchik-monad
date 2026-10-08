@@ -18,6 +18,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const { lang, setLang } = useI18n();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const game = path === "/play";
+  const bare = game || path === "/";
   const items = [
     { to: "/", label: lang === "uk" ? "Стіл" : "Desk" },
     { to: "/secretary", label: lang === "uk" ? "Секретар" : "Secretary" },
@@ -26,7 +27,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-sky flex min-h-dvh flex-col">
-      {game ? null : (
+      {bare ? null : (
         <header className="sticky top-0 z-20 mx-auto flex w-full min-w-0 max-w-lg items-center justify-between gap-2 px-4 py-3">
           <Link to="/" className="flex min-w-0 items-center gap-2 text-ink no-underline">
             <SunMark />
@@ -53,8 +54,8 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
       )}
-      <main className={game ? "relative h-dvh" : "mx-auto w-full max-w-lg flex-1 px-4 pb-28"}>{children}</main>
-      {game ? null : (
+      <main className={bare ? "relative h-dvh w-full overflow-hidden" : "mx-auto w-full max-w-lg flex-1 px-4 pb-28"}>{children}</main>
+      {bare ? null : (
         <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(0.65rem,env(safe-area-inset-bottom))]">
           <div className="glass dock pointer-events-auto w-full max-w-lg">
             {items.map((item) => {

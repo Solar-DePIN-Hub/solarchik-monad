@@ -12,7 +12,7 @@ export function Booth() {
 
 function BoothShell() {
   return (
-    <div className="booth relative mx-auto flex h-dvh w-full max-w-md flex-col px-4 pt-5" data-theme="night">
+    <div className="booth relative flex h-dvh w-full flex-col px-4 pt-5" data-theme="night">
       <div aria-hidden className="booth-glow pointer-events-none absolute -left-10 top-0 size-64" />
       <p className="booth-gold relative text-xs font-semibold uppercase tracking-[0.18em]">Нічна будка</p>
       <h1 className="font-display relative mt-1 text-4xl leading-none">Секретар</h1>
