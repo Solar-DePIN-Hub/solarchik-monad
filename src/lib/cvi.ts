@@ -92,7 +92,7 @@ export async function readPass(address: string): Promise<PassRead | null> {
       args: [address as Address],
     });
     const status = Number(result[0]);
-    const expiration = Number(result[6]);
+    const expiration = Number(result[5]);
     return {
       open: status === 1 && expiration > Math.floor(Date.now() / 1000),
       status,
