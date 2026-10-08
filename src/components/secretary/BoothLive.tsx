@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentType } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from "react";
 import { Phone } from "lucide-react";
 import { parseEther } from "viem";
 import { detectLocale } from "@/lib/game/i18n";
@@ -411,32 +411,41 @@ function BoothInner() {
   const t = copy[locale];
   const listening = open && busy && !report;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const lang = readLang();
     setLocale(lang);
+    setLineLang(lang === "en" ? "en" : "uk");
     setTheme(readTheme());
     const id = readId();
     setPlayerId(id);
-    void setSecretaryLang(id, lang).then((got) => setLineLang(got ?? "fail"));
-    void mintUrl().then(setMint);
-    void passContract().then((value) => setContract(value || ""));
     setSaved(hasPasskey());
     const session = readSession();
     if (session) {
       setAccount(session.person);
       setAgent(session.agent);
       if (session.browser) setBrowser(session.browser);
-      remember(session.person, session.agent, session.browser);
     }
     try {
       const savedLine = localStorage.getItem(LINE_KEY) || "";
-      const id = readFwdId(localStorage.getItem(COUNTRY_KEY), lang);
-      setCountry(id);
-      setLine(savedLine || `+${fwdRule(id, lang).cc}`);
+      const countryId = readFwdId(localStorage.getItem(COUNTRY_KEY), lang);
+      setCountry(countryId);
+      setLine(savedLine || `+${fwdRule(countryId, lang).cc}`);
     } catch {
       setCountry(readFwdId("", lang));
     }
+    const ledger = readLedger();
+    setSpentCalls(ledger.spent);
     setCalls(readCalls());
+  }, []);
+
+  useEffect(() => {
+    const lang = readLang();
+    const id = readId();
+    void setSecretaryLang(id, lang).then((got) => {
+      if (!got) setLineLang("fail");
+    });
+    void mintUrl().then(setMint);
+    void passContract().then((value) => setContract(value || ""));
   }, []);
 
   useEffect(() => {
@@ -943,7 +952,7 @@ function BoothInner() {
         </div>
       </div>
 
-      <section className="booth-card relative order-4 rounded-xl p-5 lg:order-5 lg:col-span-7" style={{ animationDelay: "40ms" }}>
+      <section className="booth-card relative order-4 rounded-xl p-5 lg:order-5 lg:col-span-7">
         <div className="booth-handset relative mx-auto grid size-24 place-items-center">
           <span className="booth-ring" aria-hidden />
           <span className="booth-ring booth-ring-late" aria-hidden />
@@ -1090,7 +1099,7 @@ function BoothInner() {
       </section>
 
       <div className="order-5 flex flex-col gap-3 lg:order-4 lg:col-span-5">
-      <section className="booth-card relative rounded-xl p-4" style={{ animationDelay: "120ms" }}>
+      <section className="booth-card relative rounded-xl p-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-2xl">{t.account}</h2>
           {passLabel ? <span className={"text-xs font-semibold " + passTone}>{passLabel}</span> : null}
@@ -1165,7 +1174,7 @@ function BoothInner() {
         </div>
       </section>
 
-      <section className="booth-card relative rounded-xl p-4" style={{ animationDelay: "200ms" }}>
+      <section className="booth-card relative rounded-xl p-4">
         <h2 className="font-display text-2xl">{t.pay}</h2>
         <p className="mt-2 font-mono text-sm font-semibold">{wallet ? shortHex(wallet) : t.noWallet}</p>
         {wallet ? (
@@ -1201,7 +1210,7 @@ function BoothInner() {
         ) : null}
       </section>
       </div>
-      <section className="booth-card relative order-6 rounded-xl p-4 lg:col-span-12" style={{ animationDelay: "260ms" }}>
+      <section className="booth-card relative order-6 rounded-xl p-4 lg:col-span-12">
         <h2 className="font-display text-2xl">{t.archive}</h2>
         {callsState === "miss" ? <p className="booth-gold mt-2 text-sm font-semibold">{calls.length ? t.archiveMiss : t.archiveDown}</p> : null}
         {callsState === "ok" && calls.length === 0 ? <p className="booth-muted mt-2 text-sm">{t.archiveEmpty}</p> : null}

@@ -271,7 +271,6 @@ a {
   border: 1px solid var(--booth-line);
   color: var(--booth-ink);
   box-shadow: 0 18px 40px color-mix(in oklab, #000 16%, transparent);
-  animation: booth-rise 520ms ease both;
 }
 
 .booth-chip {
@@ -349,7 +348,6 @@ a {
 }
 
 .booth-reply {
-  animation: booth-pop 320ms ease both;
 }
 
 @keyframes booth-rise {
