@@ -18,7 +18,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const { lang, setLang } = useI18n();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const game = path === "/play";
-  const bare = game || path === "/";
+  const bare = game || path === "/" || path === "/judges";
   const items = [
     { to: "/", label: lang === "uk" ? "Стіл" : "Desk" },
     { to: "/secretary", label: lang === "uk" ? "Секретар" : "Secretary" },

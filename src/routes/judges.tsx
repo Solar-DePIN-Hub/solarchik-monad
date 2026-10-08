@@ -1,131 +1,128 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { EXPLORER, FAUCET, HACKATHON, MONAD_REPO, DEPLOYED, addressUrl, activeChain } from "@/lib/chain";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { EXPLORER, FAUCET, MONAD_REPO, activeChain } from "@/lib/chain";
+import { ASSISTANT_LINE } from "@/lib/game/secretary";
 import { useI18n } from "@/lib/i18n/provider";
 
 export const Route = createFileRoute("/judges")({ component: JudgesPage });
 
 const copy = {
   en: {
-    title: "Project profile",
-    track: "Track · Trust, Identity & AI Infrastructure",
-    lead: "Passkey account, daily check-in, and a strategy mint. The agent does not trade.",
-    demo1: "Open the desk. Create a passkey. No seed is shown and MetaMask is not the account.",
-    demo2: "Check in. The hash opens on the Monad explorer. A second check-in inside 24 hours reverts.",
-    demo3: "Mint a strategy. The card shows the token id and the Strategy contract.",
-    demo4: "Limits and pause stay in the browser until AgentDesk is deployed. The screen says so.",
-    demo5: "Transfer stays rejected until a CVI read says verified. History says not indexed when Envio is unset. Chat says offline demo when a model key is missing.",
-    missing: "AgentDesk is not deployed. No address is invented. No public demo URL is written here yet.",
-    blurb: `Solarchik on Monad is an agent desk.
-
-Track: Trust, Identity & AI Infrastructure.
-
-On Monad testnet (chain id 10143) the desk signs SolarchikStreak.checkIn once per 24 hours and mints SolarchikStrategy, an ERC-721 with a name and a risk level. It does not trade.
-
-The account is a Mera passkey. No seed is shown. MetaMask is not on this path.
-
-Privy app id cmutyetdu035e0cjpxez5f3hl is set. The agent wallet is not drawn, and it is not a second login. AgentDesk is not deployed, so limits and pause stay in the browser and say so. The CRE workflow is not live. History is not indexed until VITE_ENVIO_URL is set. Kimi and Qwen say offline demo when their server keys are missing. A transfer stays rejected until a CVI read returns verified.
-
-Contracts:
-Streak https://testnet.monadexplorer.com/address/0x357c1a631f208FBB84d430bd18FEE65B54456a38
-Strategy https://testnet.monadexplorer.com/address/0xDfdd6b3402180316D780d7634624d09b9026Fb42
-
-Code: https://github.com/Solar-DePIN-Hub/solarchik-monad
-
-Deadline: 13 October 2026, 11:59 PM ET. Submit at https://hackathon.monad.xyz`,
+    kicker: "Monad testnet · chain 10143",
+    title: "For judges",
+    lead: "The demo is the night booth on the home page. This page is the order. Nothing else on the old desk is part of the run.",
+    open: "Open the booth",
+    steps: "The run",
+    stop: "If it stops",
+    s1: "Create account. One passkey. The card shows You · …/0 and Agent · …/1. No seed is shown. MetaMask is not the account.",
+    s2: "The pass has to say Pass open before the line arms. Get a pass, or Check browser wallet if that wallet already holds one. No pass leaves Turn on blocked.",
+    s3: "Connect Privy. It is not the account. Open Test MON, then Send 0.01 MON. The transfer goes to the agent key. The hash opens on the explorer. The browser wallet does not pay.",
+    s4: `Your number and the SIM country. Turn on only if this phone should forward to ${ASSISTANT_LINE}. The phone must confirm the code. For a short window the next call on that shared line is filed under this account.`,
+    s5: "Under The call, write who rang and press Pick up. The archive gets a row only after the assistant answers. No reply stays No reply. The 0.01 MON does not buy call credit.",
+    w1: "Cancelled or Passkey did not open: press Open account again. Do not create a second passkey unless the first one is gone.",
+    w2: "Check unavailable: the pass read failed. Press Check key once more. Do not treat a closed pass as open.",
+    w3: "The transfer did not send: take Test MON into the Privy wallet first. A browser wallet cannot send this transfer.",
+    w4: "The line was not linked: the code can still be in the phone. The archive will not file the call under this account.",
+    w5: "No credit: Pick up stops. Forwarding the phone does not spend that credit, and the MON transfer does not refill it.",
+    chain: "Chain",
+    faucet: "Faucet",
+    code: "Code",
+    home: "Booth",
   },
   uk: {
-    title: "Профіль проєкту",
-    track: "Трек · Довіра, особа й інфраструктура ШІ",
-    lead: "Акаунт з passkey, щоденна відмітка і мінт стратегії. Агент не торгує.",
-    demo1: "Відкрий стіл. Створи passkey. Сід не показується, MetaMask не є акаунтом.",
-    demo2: "Відміться. Хеш відкривається в оглядачі Monad. Друга відмітка за 24 години падає.",
-    demo3: "Замінть стратегію. Картка показує token id і контракт Strategy.",
-    demo4: "Ліміти й пауза лишаються в браузері, поки AgentDesk не задеплоєний. Екран так і пише.",
-    demo5: "Переказ лишається відхиленим, поки читання CVI не скаже verified. Історія каже, що не індексована, якщо Envio не заданий. Чат каже офлайн-демо, якщо немає ключа моделі.",
-    missing: "AgentDesk не задеплоєний. Адреса не вигадана. Публічного демо-URL тут ще немає.",
-    blurb: "",
+    kicker: "Тестнет Monad · мережа 10143",
+    title: "Суддям",
+    lead: "Демо — нічна будка на головній. Тут лише порядок прогону. Старий стіл у цей прогін не входить.",
+    open: "Відкрити будку",
+    steps: "Прогін",
+    stop: "Якщо зупинилось",
+    s1: "Створити рахунок. Один passkey. На картці буде Ти · …/0 і Агент · …/1. Сід не показується. MetaMask не є рахунком.",
+    s2: "Пас має сказати «Пас відкритий», інакше лінія не вмикається. Взяти пас, або Перевірити гаманець, якщо пас уже лежить у ньому. Без паса «Увімкнути» не піде.",
+    s3: "Підключити Privy. Це не рахунок. Тестовий MON, потім Надіслати 0.01 MON. Переказ іде на ключ агента, хеш відкривається в оглядачі. Гаманець браузера не платить.",
+    s4: `Твій номер і країна SIM. Увімкнути лише якщо цей телефон має слати дзвінки на ${ASSISTANT_LINE}. Телефон мусить підтвердити код. Коротке вікно після цього пише наступний дзвінок на спільну лінію на цей рахунок.`,
+    s5: "У картці «Дзвінок» напиши, хто дзвонив, і натисни Взяти слухавку. Архів отримує рядок лише після відповіді помічника. «Відповіді немає» так і лишається. 0.01 MON кредит дзвінка не купує.",
+    w1: "Скасовано або Passkey не відкрився: ще раз Відкрити рахунок. Другий passkey не створюй, якщо перший живий.",
+    w2: "Перевірка недоступна: читання паса впало. Натисни Перевірити ключ ще раз. Закритий пас не вважай відкритим.",
+    w3: "Переказ не пішов: спочатку візьми тестовий MON на гаманець Privy. Браузерний гаманець цей переказ не шле.",
+    w4: "Лінію не прив'язано: код усе одно може бути в телефоні. Архів цей дзвінок на рахунок не запише.",
+    w5: "Немає кредиту: Взяти слухавку зупиняється. Переадресація телефону цей кредит не витрачає, і MON його не поповнює.",
+    chain: "Мережа",
+    faucet: "Кран",
+    code: "Код",
+    home: "Будка",
   },
 } as const;
 
 function JudgesPage() {
-  const { lang } = useI18n();
+  const { lang, setLang } = useI18n();
   const t = copy[lang];
-  const blurb = copy.en.blurb;
-  const [copyState, setCopyState] = useState<"idle" | "ok" | "fail">("idle");
-
-  async function copyBlurb() {
-    try {
-      await navigator.clipboard.writeText(blurb);
-      setCopyState("ok");
-    } catch {
-      setCopyState("fail");
-    }
-  }
+  const steps = [t.s1, t.s2, t.s3, t.s4, t.s5];
+  const stops = [t.w1, t.w2, t.w3, t.w4, t.w5];
 
   return (
-    <div className="rise flex flex-col gap-4 pb-4">
-      <header>
-        <p className="pill">Monad Metropolis</p>
-        <h1 className="font-display mt-3 text-4xl">{t.title}</h1>
-        <p className="mt-2 font-semibold">{t.track}</p>
-        <p className="mt-2 text-ink-soft">{t.lead}</p>
-      </header>
-      <section className="card p-4">
-        <ol className="list-decimal space-y-2 pl-5 text-sm">
-          <li>{t.demo1}</li>
-          <li>{t.demo2}</li>
-          <li>{t.demo3}</li>
-          <li>{t.demo4}</li>
-          <li>{t.demo5}</li>
-        </ol>
-      </section>
-      <section className="card p-4 text-sm">
-        <p>
-          {activeChain.id} · {activeChain.name}
-        </p>
-        <p className="mt-2">{activeChain.rpcUrls.default.http[0]}</p>
-        <p className="mt-2">
-          <a href={EXPLORER} target="_blank" rel="noreferrer">
-            {EXPLORER}
-          </a>
-        </p>
-        <p className="mt-2">
-          <a href={FAUCET} target="_blank" rel="noreferrer">
-            {FAUCET}
-          </a>
-        </p>
-        <p className="mt-2">
-          <a href={MONAD_REPO} target="_blank" rel="noreferrer">
-            {MONAD_REPO}
-          </a>
-        </p>
-        <p className="mt-2">
-          <a href={HACKATHON} target="_blank" rel="noreferrer">
-            {HACKATHON}
-          </a>
-        </p>
-      </section>
-      <ul className="space-y-1 text-sm font-semibold">
-        <li>
-          <a href={addressUrl(DEPLOYED.streak)} target="_blank" rel="noreferrer">
-            Streak {DEPLOYED.streak}
-          </a>
-        </li>
-        <li>
-          <a href={addressUrl(DEPLOYED.strategy)} target="_blank" rel="noreferrer">
-            Strategy {DEPLOYED.strategy}
-          </a>
-        </li>
-      </ul>
-      <p className="text-sm">{t.missing}</p>
-      <section className="card p-4">
-        <button type="button" className="btn btn-sun" onClick={() => void copyBlurb()}>
-          {copyState === "ok" ? (lang === "uk" ? "Скопійовано" : "Copied") : lang === "uk" ? "Скопіювати опис" : "Copy write-up"}
-        </button>
-        {copyState === "fail" ? <p className="mt-2 text-sm font-semibold">{lang === "uk" ? "Не вдалося скопіювати." : "Could not copy."}</p> : null}
-        <textarea className="field mt-3 min-h-64" readOnly value={blurb} />
-      </section>
+    <div className="booth h-dvh w-full overflow-y-auto" data-theme="night">
+      <div className="relative mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 sm:px-6">
+        <header className="flex items-start justify-between gap-3">
+          <div>
+            <p className="booth-gold text-xs font-semibold uppercase tracking-[0.18em]">{t.kicker}</p>
+            <h1 className="font-display mt-1 text-4xl leading-none">{t.title}</h1>
+          </div>
+          <div className="booth-chip flex rounded-full p-1" role="group" aria-label="Language">
+            <button type="button" className={lang === "en" ? "rounded-full bg-primary px-3 py-1.5 text-sm font-semibold text-primary-fg" : "booth-muted rounded-full px-3 py-1.5 text-sm font-semibold"} onClick={() => setLang("en")}>
+              EN
+            </button>
+            <button type="button" className={lang === "uk" ? "rounded-full bg-primary px-3 py-1.5 text-sm font-semibold text-primary-fg" : "booth-muted rounded-full px-3 py-1.5 text-sm font-semibold"} onClick={() => setLang("uk")}>
+              УК
+            </button>
+          </div>
+        </header>
+        <p className="booth-muted text-sm leading-relaxed">{t.lead}</p>
+        <Link to="/" className="inline-flex w-fit rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-fg no-underline">
+          {t.open}
+        </Link>
+        <section className="booth-card rounded-2xl p-4">
+          <h2 className="font-display text-2xl">{t.steps}</h2>
+          <ol className="mt-3 list-decimal space-y-3 pl-5 text-sm leading-relaxed">
+            {steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </section>
+        <section className="booth-card rounded-2xl p-4">
+          <h2 className="font-display text-2xl">{t.stop}</h2>
+          <ul className="booth-muted mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed">
+            {stops.map((row) => (
+              <li key={row}>{row}</li>
+            ))}
+          </ul>
+        </section>
+        <section className="booth-chip grid gap-2 rounded-2xl p-4 text-sm sm:grid-cols-2">
+          <p>
+            {t.chain} {activeChain.id}
+          </p>
+          <p>
+            {t.home}{" "}
+            <Link to="/" className="underline">
+              /
+            </Link>
+          </p>
+          <p>
+            <a href={FAUCET} target="_blank" rel="noreferrer">
+              {t.faucet}
+            </a>
+          </p>
+          <p>
+            <a href={EXPLORER} target="_blank" rel="noreferrer">
+              {EXPLORER.replace("https://", "")}
+            </a>
+          </p>
+          <p className="sm:col-span-2">
+            {t.code}{" "}
+            <a href={MONAD_REPO} target="_blank" rel="noreferrer">
+              {MONAD_REPO.replace("https://", "")}
+            </a>
+          </p>
+        </section>
+      </div>
     </div>
   );
 }

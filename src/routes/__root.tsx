@@ -10,9 +10,9 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Solarchik on Monad" },
-      { name: "description", content: "Passkey agent desk on Monad testnet: daily check-in and strategy mint. No trades." },
-      { name: "theme-color", content: "#ffb703" },
+      { title: "Solarchik" },
+      { name: "description", content: "Night-booth secretary on Monad testnet. One passkey makes two keys. A pass arms the phone line. Privy pays the agent." },
+      { name: "theme-color", content: "#071018" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
