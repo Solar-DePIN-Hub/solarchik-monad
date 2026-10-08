@@ -450,9 +450,9 @@ function BoothInner() {
   const listening = open && busy && !report;
 
   useLayoutEffect(() => {
-    const lang = readLang();
+    const lang = "en";
     setLocale(lang);
-    setLineLang(lang === "en" ? "en" : "uk");
+    setLineLang("en");
     setTheme(readTheme());
     const id = readId();
     setPlayerId(id);
@@ -477,10 +477,10 @@ function BoothInner() {
   }, []);
 
   useEffect(() => {
-    const lang = readLang();
     const id = readId();
-    void setSecretaryLang(id, lang).then((got) => {
+    void setSecretaryLang(id, "en").then((got) => {
       if (!got) setLineLang("fail");
+      else setLineLang("en");
     });
     void mintUrl().then(setMint);
     void passContract().then((value) => setContract(value || ""));
@@ -805,7 +805,8 @@ function BoothInner() {
     }
     setLineNote(code);
     nativeUssd(code);
-    const secs = await claimLine(playerId, locale);
+    await setSecretaryLang(playerId, "en");
+    const secs = await claimLine(playerId, "en");
     if (secs) setArmedUntil(Date.now() + secs * 1000);
     setHideTalk(false);
     setLineNote(secs === null ? `${t.claimMiss} ${code}` : `${t.armed.replace("{n}", String(secs))} ${code}`);
@@ -1029,11 +1030,8 @@ function BoothInner() {
         </div>
         <div className="mx-auto mt-4 flex max-w-sm flex-col items-center gap-2 text-center">
           <div className="booth-chip flex rounded-full p-1" role="group" aria-label="Language">
-            <button type="button" className={locale === "en" ? "rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-fg" : "booth-muted rounded-full px-5 py-2 text-sm font-semibold"} onClick={() => choose("en")}>
+            <button type="button" className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-fg" onClick={() => choose("en")}>
               EN
-            </button>
-            <button type="button" className={locale === "uk" ? "rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-fg" : "booth-muted rounded-full px-5 py-2 text-sm font-semibold"} onClick={() => choose("uk")}>
-              УК
             </button>
           </div>
           <p className={"text-sm font-semibold " + (lineLang === "fail" ? "booth-gold" : "booth-muted")}>
