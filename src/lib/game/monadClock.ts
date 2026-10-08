@@ -168,6 +168,23 @@ export async function readMonBalance(address: string): Promise<number | null> {
   }
 }
 
+export async function readMonTransfer(hash: string): Promise<{ from: string; to: string; value: number } | null> {
+  if (!/^0x[a-fA-F0-9]{64}$/.test(hash)) return null;
+  try {
+    const res = await fetch(RPC, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getTransactionByHash", params: [hash] }),
+    });
+    const json = (await res.json()) as { result?: { from?: string; to?: string; value?: string } | null };
+    const tx = json.result;
+    if (!tx?.from || !tx.to || typeof tx.value !== "string") return null;
+    return { from: tx.from, to: tx.to, value: Number(BigInt(tx.value)) / 1e18 };
+  } catch {
+    return null;
+  }
+}
+
 export async function sendMon(to: string, amount: number): Promise<MonadProof> {
   if (!/^0x[a-fA-F0-9]{40}$/.test(to)) return { ok: false, error: "Потрібна адреса 0x" };
   if (!Number.isFinite(amount) || amount <= 0) return { ok: false, error: "Вкажи суму в MON" };

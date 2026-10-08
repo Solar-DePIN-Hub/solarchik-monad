@@ -7,25 +7,25 @@ import {
   callTranscript,
   claimLine,
   cleanForwardNumber,
-  getBalance,
   listCalls,
   makePlayerId,
-  money,
   screenCall,
-  sessionCost,
   type LiveCall,
   type SecretarySummary,
   type TranscriptLine,
 } from "@/lib/game/secretary";
 import { filledOn, fwdName, fwdRule, readFwdId, sortedFwd } from "@/lib/game/fwd";
 import { nativeUssd } from "@/lib/game/buddyNet";
-import { monadAddressUrl, monadTxUrl, connectMonad, listBrowserWallets, readMonBalance, type NamedWallet } from "@/lib/game/monadClock";
+import { monadAddressUrl, monadTxUrl, connectMonad, listBrowserWallets, readMonBalance, readMonTransfer, type NamedWallet } from "@/lib/game/monadClock";
 import { mintUrl, passContract, readPass, type PassRead } from "@/lib/cvi";
 import { createAccount, hasPasskey, openAccount, passkeyFailed } from "@/lib/passkey";
 import { emptyWallet, type WalletApi, type WalletRow } from "./walletApi";
 
 const ID_KEY = "solarchik-secretary-id";
 const SESSION_KEY = "solarchik-booth-session";
+const CALL_MON = 0.01;
+const TOPUP_MON = 0.05;
+const CREDIT_KEY = "solarchik-booth-credit";
 const SESSION_MS = 12 * 60 * 60 * 1000;
 const LANG_KEY = "solarchik-secretary-lang";
 const THEME_KEY = "solarchik-secretary-theme";
@@ -58,7 +58,11 @@ const copy = {
     hang: "Hang up",
     waiting: "Listening…",
     silent: "No reply.",
-    need: "No credit. A call is {n}.",
+    need: "No credit. Top up 0.05 MON. That is 5 calls.",
+    callsLeft: "{n} calls left",
+    topup: "Top up 0.05 MON",
+    added: "Added {mon} MON · {n} calls.",
+    topupMiss: "The transfer landed, but the chain has not shown it yet.",
     empty: "Write the call first.",
     needAccount: "Open the account first.",
     account: "Account",
@@ -143,7 +147,11 @@ const copy = {
     hang: "Покласти",
     waiting: "Слухаю…",
     silent: "Відповіді немає.",
-    need: "Немає кредиту. Дзвінок коштує {n}.",
+    need: "Немає кредиту. Поповни 0.05 MON. Це 5 дзвінків.",
+    callsLeft: "Лишилось дзвінків: {n}",
+    topup: "Поповнити на 0.05 MON",
+    added: "Поповнено {mon} MON · {n} дзвінків.",
+    topupMiss: "Переказ пішов, але мережа його ще не показала.",
     empty: "Спочатку напиши дзвінок.",
     needAccount: "Спочатку рахунок.",
     account: "Рахунок",
@@ -227,6 +235,27 @@ function remember(person: string, agent: string, browser: string) {
   if (!/^0x[a-fA-F0-9]{40}$/.test(person) || !/^0x[a-fA-F0-9]{40}$/.test(agent)) return;
   const next = /^0x[a-fA-F0-9]{40}$/.test(browser) ? browser : "";
   localStorage.setItem(SESSION_KEY, JSON.stringify({ person, agent, browser: next, at: Date.now() }));
+}
+
+function writeLedger(row: { hashes: string[]; spent: number }) {
+  localStorage.setItem(CREDIT_KEY, JSON.stringify(row));
+}
+
+function readLedger(): { hashes: string[]; spent: number } {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CREDIT_KEY) || "") as { hashes?: unknown; spent?: unknown };
+    const hashes = Array.isArray(raw.hashes)
+      ? raw.hashes.filter((hash): hash is string => typeof hash === "string" && /^0x[a-fA-F0-9]{64}$/.test(hash))
+      : [];
+    const spent = typeof raw.spent === "number" && raw.spent > 0 ? Math.floor(raw.spent) : 0;
+    return { hashes, spent };
+  } catch {
+    return { hashes: [], spent: 0 };
+  }
+}
+
+function callsFrom(mon: number, spent: number): number {
+  return Math.max(0, Math.floor(mon / CALL_MON + 1e-6) - spent);
 }
 
 function readId(): string {
@@ -316,8 +345,8 @@ function BoothInner() {
   const [locale, setLocale] = useState<Lang>("uk");
   const [theme, setTheme] = useState<"night" | "day">("night");
   const [playerId, setPlayerId] = useState("");
-  const [credit, setCredit] = useState<number | null>(null);
-  const [creditState, setCreditState] = useState<"load" | "ok" | "miss">("load");
+  const [paidMon, setPaidMon] = useState(0);
+  const [spentCalls, setSpentCalls] = useState(0);
   const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -374,15 +403,6 @@ function BoothInner() {
     setTheme(readTheme());
     const id = readId();
     setPlayerId(id);
-    void getBalance(id)
-      .then((row) => {
-        setCredit(row.usd);
-        setCreditState("ok");
-      })
-      .catch(() => {
-        setCredit(null);
-        setCreditState("miss");
-      });
     void mintUrl().then(setMint);
     void passContract().then((value) => setContract(value || ""));
     setSaved(hasPasskey());
@@ -448,6 +468,24 @@ function BoothInner() {
       live = false;
     };
   }, [account, browser]);
+
+  useEffect(() => {
+    if (!agent) return;
+    let live = true;
+    const ledger = readLedger();
+    setSpentCalls(ledger.spent);
+    void (async () => {
+      let mon = 0;
+      for (const hash of ledger.hashes) {
+        const tx = await readMonTransfer(hash);
+        if (tx && tx.to.toLowerCase() === agent.toLowerCase() && tx.value + 1e-9 >= CALL_MON) mon += tx.value;
+      }
+      if (live) setPaidMon(mon);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [agent]);
 
   useEffect(() => {
     if (!agent) {
@@ -573,6 +611,53 @@ function BoothInner() {
         void readMonBalance(wallet).then(setMon);
         void readMonBalance(agent).then(setAgentMon);
       }, 4000);
+    } catch {
+      setHint(t.txFail);
+    }
+    setBusy(false);
+  }
+
+  async function topUp() {
+    if (!agent) {
+      setHint(t.needAgent);
+      return;
+    }
+    const embedded = walletsRef.current.find((row) => row.walletClientType === "privy");
+    if (!embedded || !wallet || busy) {
+      setHint(t.needPrivy);
+      return;
+    }
+    setBusy(true);
+    setHint("");
+    try {
+      await embedded.switchChain(10143);
+      const sent = await sendRef.current(
+        { to: agent, from: wallet, value: `0x${parseEther(String(TOPUP_MON)).toString(16)}`, chainId: 10143 },
+        { address: wallet },
+      );
+      const hash = sent.hash;
+      let tx: { from: string; to: string; value: number } | null = null;
+      for (let i = 0; i < 8; i++) {
+        tx = await readMonTransfer(hash);
+        if (tx) break;
+        await new Promise((resolve) => window.setTimeout(resolve, 1000));
+      }
+      if (!tx || tx.to.toLowerCase() !== agent.toLowerCase() || tx.value + 1e-9 < TOPUP_MON) {
+        setHint(t.topupMiss);
+        setBusy(false);
+        return;
+      }
+      const ledger = readLedger();
+      if (!ledger.hashes.includes(hash)) ledger.hashes.push(hash);
+      writeLedger(ledger);
+      setTx(hash);
+      setPaidMon((cur) => cur + tx.value);
+      const n = Math.floor(tx.value / CALL_MON + 1e-6);
+      setHint(t.added.replace("{mon}", tx.value.toFixed(2)).replace("{n}", String(n)));
+      window.setTimeout(() => {
+        void readMonBalance(wallet).then(setMon);
+        void readMonBalance(agent).then(setAgentMon);
+      }, 2000);
     } catch {
       setHint(t.txFail);
     }
@@ -752,8 +837,8 @@ function BoothInner() {
       setNote(t.passClosed);
       return;
     }
-    if (credit !== null && credit < sessionCost()) {
-      setNote(t.need.replace("{n}", money(sessionCost())));
+    if (callsFrom(paidMon, spentCalls) < 1) {
+      setNote(t.need);
       return;
     }
     setOpen(true);
@@ -765,14 +850,16 @@ function BoothInner() {
     if (result.ok) {
       setReport(result.reply);
       setSummary(result.summary);
-      setCredit(result.usd);
-      setCreditState("ok");
+      setSpentCalls((cur) => {
+        const next = cur + 1;
+        const ledger = readLedger();
+        ledger.spent = next;
+        writeLedger(ledger);
+        return next;
+      });
       speak(result.reply, locale);
     } else if (result.needTopup) {
-      setCredit(result.usd);
-      setCreditState("ok");
-      setReport("");
-      setNote(t.need.replace("{n}", money(sessionCost())));
+      setNote(t.need);
     } else {
       setReport(t.silent);
     }
@@ -793,7 +880,8 @@ function BoothInner() {
 
   const passLabel = !account ? null : pass === "wait" ? t.passLook : pass === null ? t.passFail : pass.open ? t.passOpen : t.passClosed;
   const passTone = !account || pass === "wait" || pass === null ? "text-muted" : pass.open ? "text-ok" : "text-danger";
-  const creditLabel = creditState === "load" ? "…" : creditState === "ok" && credit !== null ? money(credit) : "—";
+  const callsLeft = callsFrom(paidMon, spentCalls);
+  const creditLabel = `${paidMon.toFixed(2)} MON`;
 
   return (
     <div className={"booth relative h-dvh w-full overflow-y-auto" + (listening || liveCall ? " is-live" : "")} data-theme={theme}>
@@ -862,9 +950,13 @@ function BoothInner() {
           </div>
           <div className="booth-chip rounded-lg px-3 py-2">
             <p className="booth-faint text-xs font-semibold uppercase tracking-wide">{t.price}</p>
-            <p className="font-display text-xl tabular-nums">{money(sessionCost())}</p>
+            <p className="font-display text-xl tabular-nums">{CALL_MON.toFixed(2)} MON</p>
           </div>
         </div>
+        <p className="booth-muted mt-2 text-sm">{t.callsLeft.replace("{n}", String(callsLeft))}</p>
+        <button type="button" className={btn + " mt-3 bg-primary text-primary-fg"} disabled={busy} onClick={() => void topUp()}>
+          {t.topup}
+        </button>
         <label className="mt-4 block text-sm font-semibold">
           {t.call}
           {liveCall ? (
