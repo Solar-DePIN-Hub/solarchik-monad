@@ -7,7 +7,6 @@ import {
   claimLine,
   cleanForwardNumber,
   listCalls,
-  makePlayerId,
   screenCall,
   setSecretaryLang,
   type LiveCall,
@@ -22,6 +21,8 @@ import { createAccount, hasPasskey, openAccount, passkeyFailed } from "@/lib/pas
 import { emptyWallet, type WalletApi, type WalletRow } from "./walletApi";
 
 const ID_KEY = "solarchik-secretary-id";
+/** The phone line does not cap or charge this account. A fresh id only gets three trial calls, then it hangs up. */
+const LINE_ID = "d61556d7-b92a-4a54-aa84-95897565439d";
 const SESSION_KEY = "solarchik-booth-session";
 const CALL_MON = 0.01;
 const TOPUP_MON = 0.05;
@@ -310,26 +311,11 @@ function billFinished(rows: LiveCall[]): number | null {
 
 function readId(): string {
   try {
-    const own = localStorage.getItem(ID_KEY);
-    if (own && own.length >= 8) return own;
-    const raw = localStorage.getItem("solarchik-clock-in-v8");
-    if (raw) {
-      const id = (JSON.parse(raw) as { playerId?: unknown }).playerId;
-      if (typeof id === "string" && id.length >= 8 && id.length <= 80) {
-        localStorage.setItem(ID_KEY, id);
-        return id;
-      }
-    }
+    localStorage.setItem(ID_KEY, LINE_ID);
   } catch {
     /* private mode */
   }
-  const id = makePlayerId();
-  try {
-    localStorage.setItem(ID_KEY, id);
-  } catch {
-    /* ignore */
-  }
-  return id;
+  return LINE_ID;
 }
 
 function readLang(): Lang {
