@@ -249,25 +249,56 @@ function remember(person: string, agent: string, browser: string) {
   localStorage.setItem(SESSION_KEY, JSON.stringify({ person, agent, browser: next, at: Date.now() }));
 }
 
-function writeLedger(row: { hashes: string[]; spent: number }) {
+function writeLedger(row: { hashes: string[]; spent: number; billed: string[] }) {
   localStorage.setItem(CREDIT_KEY, JSON.stringify(row));
 }
 
-function readLedger(): { hashes: string[]; spent: number } {
+function readLedger(): { hashes: string[]; spent: number; billed: string[] } {
   try {
-    const raw = JSON.parse(localStorage.getItem(CREDIT_KEY) || "") as { hashes?: unknown; spent?: unknown };
+    const raw = JSON.parse(localStorage.getItem(CREDIT_KEY) || "") as { hashes?: unknown; spent?: unknown; billed?: unknown };
     const hashes = Array.isArray(raw.hashes)
       ? raw.hashes.filter((hash): hash is string => typeof hash === "string" && /^0x[a-fA-F0-9]{64}$/.test(hash))
       : [];
     const spent = typeof raw.spent === "number" && raw.spent > 0 ? Math.floor(raw.spent) : 0;
-    return { hashes, spent };
+    const billed = Array.isArray(raw.billed)
+      ? raw.billed.filter((id): id is string => typeof id === "string" && id.length > 0).slice(-200)
+      : [];
+    return { hashes, spent, billed };
   } catch {
-    return { hashes: [], spent: 0 };
+    return { hashes: [], spent: 0, billed: [] };
   }
 }
 
 function callsFrom(mon: number, spent: number): number {
   return Math.max(0, Math.floor(mon / CALL_MON + 1e-6) - spent);
+}
+
+function callKey(id: string): string {
+  return id.replace(/^(rtc|live)_/, "");
+}
+
+function finishedCall(status: string): boolean {
+  return status !== "pending" && status !== "failed" && status !== "blocked" && status !== "topup";
+}
+
+/** Bills a finished phone call once. Calls older than six hours were already in the archive and stay free. */
+function billFinished(rows: LiveCall[]): number | null {
+  const ledger = readLedger();
+  const billed = new Set(ledger.billed);
+  let spent = ledger.spent;
+  let changed = false;
+  const cutoff = Date.now() - 6 * 60 * 60 * 1000;
+  for (const row of rows) {
+    const key = callKey(row.callId);
+    if (!key || billed.has(key) || !finishedCall(row.status)) continue;
+    billed.add(key);
+    changed = true;
+    const at = row.at > 0 && row.at < 1e12 ? row.at * 1000 : row.at;
+    if (at >= cutoff) spent += 1;
+  }
+  if (!changed) return null;
+  writeLedger({ hashes: ledger.hashes, spent, billed: [...billed].slice(-200) });
+  return spent;
 }
 
 function readId(): string {
@@ -536,6 +567,8 @@ function BoothInner() {
         }
         setCalls(rows);
         setCallsState("ok");
+        const spent = billFinished(rows);
+        if (spent !== null) setSpentCalls(spent);
         try {
           localStorage.setItem(CALLS_KEY, JSON.stringify(rows));
         } catch {
@@ -905,7 +938,8 @@ function BoothInner() {
   const passLabel = !account ? null : pass === "wait" ? t.passLook : pass === null ? t.passFail : pass.open ? t.passOpen : t.passClosed;
   const passTone = !account || pass === "wait" || pass === null ? "text-muted" : pass.open ? "text-ok" : "text-danger";
   const callsLeft = callsFrom(paidMon, spentCalls);
-  const creditLabel = `${paidMon.toFixed(2)} MON`;
+  const creditLeft = Math.max(0, paidMon - spentCalls * CALL_MON);
+  const creditLabel = `${creditLeft.toFixed(2)} MON`;
 
   return (
     <div className={"booth relative h-dvh w-full overflow-y-auto" + (listening || liveCall ? " is-live" : "")} data-theme={theme}>
