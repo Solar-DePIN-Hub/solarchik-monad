@@ -1,5 +1,5 @@
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Plugin } from "vite";
 import { defineConfig } from "vite";
@@ -12,6 +12,27 @@ import { grokPwaPlugin } from "./scripts/grok-pwa-plugin.mjs";
 // @ts-expect-error JS plugin alongside the TS vite config
 import { appEnvPlugin } from "./scripts/app-env-plugin.mjs";
 import { isMigrationFile } from "./scripts/migration-plan.mjs";
+
+/** Privy hoists `@wagmi/core` 2.x. Wagmi 3 must keep the copy nested under itself. */
+function wagmiNestedPlugin(): Plugin {
+  return {
+    name: "wagmi-nested",
+    enforce: "pre",
+    async resolveId(source, importer, options) {
+      if ((source !== "@wagmi/core" && source !== "@wagmi/connectors") || !importer || importer.includes("\0")) return null;
+      const [scope, name] = source.split("/");
+      let dir = dirname(importer);
+      for (let i = 0; i < 8; i += 1) {
+        const pkg = join(dir, "node_modules", scope, name, "package.json");
+        if (existsSync(pkg)) return this.resolve(source, pkg, { skipSelf: true, ...options });
+        const parent = dirname(dir);
+        if (parent === dir) break;
+        dir = parent;
+      }
+      return null;
+    },
+  };
+}
 
 /** The files `src/lib/db.ts` globs — same directory, same non-recursive scope. */
 function hasGlobbedMigrations(root: string): boolean {
@@ -164,6 +185,7 @@ export default defineConfig(({ command, isPreview }) => ({
     },
   },
   plugins: [
+    wagmiNestedPlugin(),
     pgliteBootstrapPlugin(),
     // Before tanstackStart so /auth/popup never falls through to the SPA.
     authPopupPlugin(),
