@@ -60,7 +60,7 @@ const copy = {
     silent: "No reply.",
     need: "No credit. Top up 0.05 MON. That is 5 calls.",
     callsLeft: "{n} calls left",
-    topup: "Top up 0.05 MON",
+    topup: "Top up from Privy",
     added: "Added {mon} MON · {n} calls.",
     topupMiss: "The transfer landed, but the chain has not shown it yet.",
     empty: "Write the call first.",
@@ -87,7 +87,7 @@ const copy = {
     noWallet: "Not connected.",
     mon: "MON",
     faucet: "Test MON",
-    note: "Privy is not the account and not the agent key. It only sends 0.01 test MON to the agent.",
+    note: "Privy is not the account. Top up sends 0.05 MON from this wallet to the agent key. That is 5 calls.",
     pass: "Pass",
     passOpen: "Pass open",
     passClosed: "No pass",
@@ -149,7 +149,7 @@ const copy = {
     silent: "Відповіді немає.",
     need: "Немає кредиту. Поповни 0.05 MON. Це 5 дзвінків.",
     callsLeft: "Лишилось дзвінків: {n}",
-    topup: "Поповнити на 0.05 MON",
+    topup: "Поповнити з Privy",
     added: "Поповнено {mon} MON · {n} дзвінків.",
     topupMiss: "Переказ пішов, але мережа його ще не показала.",
     empty: "Спочатку напиши дзвінок.",
@@ -176,7 +176,7 @@ const copy = {
     noWallet: "Не підключений.",
     mon: "MON",
     faucet: "Тестовий MON",
-    note: "Privy — не рахунок і не ключ агента. Він лише шле 0.01 тестового MON агенту.",
+    note: "Privy не є рахунком. Поповнення шле 0.05 MON з цього гаманця на ключ агента. Це 5 дзвінків.",
     pass: "Пас",
     passOpen: "Пас відкритий",
     passClosed: "Паса немає",
@@ -954,7 +954,7 @@ function BoothInner() {
           </div>
         </div>
         <p className="booth-muted mt-2 text-sm">{t.callsLeft.replace("{n}", String(callsLeft))}</p>
-        <button type="button" className={btn + " mt-3 bg-primary text-primary-fg"} disabled={busy} onClick={() => void topUp()}>
+        <button type="button" className={btn + " booth-chip mt-3"} disabled={busy} onClick={() => void topUp()}>
           {t.topup}
         </button>
         <label className="mt-4 block text-sm font-semibold">
@@ -1155,6 +1155,9 @@ function BoothInner() {
           <a className={btn + " booth-chip"} href={FAUCET} target="_blank" rel="noreferrer">
             {t.faucet}
           </a>
+          <button type="button" className={btn + " bg-primary text-primary-fg"} disabled={!wallet || !agent || busy} onClick={() => void topUp()}>
+            {t.topup}
+          </button>
           <button type="button" className={btn + " booth-chip"} disabled={!wallet || !agent || busy} onClick={() => void fundAgent()}>
             {t.fund}
           </button>
