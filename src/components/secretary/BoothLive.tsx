@@ -7,6 +7,8 @@ import {
   claimLine,
   cleanForwardNumber,
   listCalls,
+  liveEar,
+  mergeTranscript,
   screenCall,
   setSecretaryLang,
   type LiveCall,
@@ -127,6 +129,7 @@ const copy = {
     archiveDown: "The archive did not open.",
     statusDone: "Answered",
     statusPending: "Still writing",
+    onLine: "On the line",
     statusFailed: "Did not connect",
     statusTopup: "No credit",
     statusBlocked: "Blocked",
@@ -223,6 +226,7 @@ const copy = {
     archiveDown: "Архів не відкрився.",
     statusDone: "Відповів",
     statusPending: "Ще пише",
+    onLine: "На лінії",
     statusFailed: "Не з'єдналось",
     statusTopup: "Немає кредиту",
     statusBlocked: "Заблоковано",
@@ -405,9 +409,11 @@ function BoothInner() {
   const [country, setCountry] = useState("UA");
   const [calls, setCalls] = useState<LiveCall[]>([]);
   const [callsState, setCallsState] = useState<"load" | "ok" | "miss">("load");
-  const [openId, setOpenId] = useState("");
-  const [lines, setLines] = useState<TranscriptLine[] | null>(null);
-  const [liveLines, setLiveLines] = useState<TranscriptLine[]>([]);
+  const [logs, setLogs] = useState<Record<string, TranscriptLine[]>>({});
+  const [folded, setFolded] = useState<Record<string, boolean>>({});
+  const logsRef = useRef<Record<string, TranscriptLine[]>>({});
+  const callsRef = useRef<LiveCall[]>([]);
+  const earIdRef = useRef("");
   const talkRef = useRef<HTMLDivElement>(null);
   const [lineNote, setLineNote] = useState("");
   const [armedUntil, setArmedUntil] = useState(0);
@@ -460,6 +466,7 @@ function BoothInner() {
     const ledger = readLedger();
     setSpentCalls(ledger.spent);
     setCalls(readCalls());
+    callsRef.current = readCalls();
   }, []);
 
   useEffect(() => {
@@ -558,7 +565,13 @@ function BoothInner() {
           setCallsState("miss");
           return;
         }
-        setCalls(rows);
+        setCalls((prev) => {
+          const hot = earIdRef.current;
+          const kept = hot ? prev.find((row) => callKey(row.callId) === callKey(hot) && inProgress(row.status)) : undefined;
+          const next = kept && !rows.some((row) => callKey(row.callId) === callKey(hot)) ? [kept, ...rows] : rows;
+          callsRef.current = next;
+          return next;
+        });
         setCallsState("ok");
         billFinished(rows);
         setSpentCalls(readLedger().spent);
@@ -570,7 +583,7 @@ function BoothInner() {
       });
     };
     pull();
-    const timer = window.setInterval(pull, 2000);
+    const timer = window.setInterval(pull, 1000);
     return () => {
       live = false;
       window.clearInterval(timer);
@@ -578,63 +591,102 @@ function BoothInner() {
   }, [playerId]);
 
   const [hideTalk, setHideTalk] = useState(false);
+  const [heldId, setHeldId] = useState("");
   const [tick, setTick] = useState(0);
-  const wasLive = useRef("");
-  const sawArchive = useRef(false);
+  const heldRef = useRef("");
   useEffect(() => {
     const timer = window.setInterval(() => setTick((n) => n + 1), 1000);
     return () => window.clearInterval(timer);
   }, []);
-  useEffect(() => {
-    if (sawArchive.current || openId || !playerId) return;
-    const newest = calls.find((row) => {
-      const at = row.at > 0 && row.at < 1e12 ? row.at * 1000 : row.at;
-      return Boolean(row.callId) && finishedCall(row.status) && at > Date.now() - 20 * 60 * 60 * 1000;
-    });
-    if (!newest?.callId) return;
-    sawArchive.current = true;
-    setOpenId(newest.callId);
-  }, [calls, openId, playerId]);
-  const [followId, setFollowId] = useState("");
   const armed = armedUntil > Date.now();
   void tick;
   const liveCall = calls.find((row) => row.callId && inProgress(row.status)) ?? null;
-  const follow = calls.find((row) => row.callId === followId) ?? null;
+  const follow = calls.find((row) => row.callId && callKey(row.callId) === callKey(heldId)) ?? null;
   const talk = hideTalk ? null : liveCall ?? follow;
   const waiting = armed && !talk && !hideTalk;
+  const talkKey = talk?.callId ? callKey(talk.callId) : "";
+  const liveLines = talkKey ? logs[talkKey] ?? [] : [];
 
   useEffect(() => {
-    if (liveCall?.callId) {
-      wasLive.current = liveCall.callId;
-      setFollowId(liveCall.callId);
-      setHideTalk(false);
-      return;
-    }
-    if (!wasLive.current) return;
-    const id = wasLive.current;
-    wasLive.current = "";
-    setFollowId(id);
-    setOpenId(id);
+    if (!liveCall?.callId) return;
+    setHeldId(liveCall.callId);
+    heldRef.current = liveCall.callId;
+    setHideTalk(false);
   }, [liveCall?.callId]);
 
   useEffect(() => {
-    if (liveCall || !followId || hideTalk) return;
-    const wait = liveLines.length >= 3 ? 4000 : 15000;
-    const timer = window.setTimeout(() => {
-      setHideTalk(true);
-      setFollowId("");
-    }, wait);
-    return () => window.clearTimeout(timer);
-  }, [liveCall, followId, hideTalk, liveLines.length]);
-
-  useEffect(() => {
-    if (!playerId || !talk?.callId) return;
-    const id = talk.callId;
+    if (!playerId) return;
     let on = true;
-    setLiveLines([]);
+    let spin = 0;
     const pull = () => {
-      void callTranscript(playerId, id).then((rows) => {
-        if (on && rows && rows.length) setLiveLines((prev) => (rows.length >= prev.length ? rows : prev));
+      spin += 1;
+      const rows = callsRef.current;
+      const hot = new Set<string>();
+      for (const row of rows) {
+        if (row.callId && inProgress(row.status)) hot.add(row.callId);
+      }
+      if (heldRef.current) hot.add(heldRef.current);
+      for (const id of rows.map((row) => row.callId).filter(Boolean).slice(0, 8)) {
+        const key = callKey(id);
+        const have = logsRef.current[key]?.length ?? 0;
+        if (!hot.has(id) && have > 0 && spin % 3 !== 0) continue;
+        void callTranscript(playerId, id).then((got) => {
+          if (!on || !got?.length) return;
+          const prev = logsRef.current[key] ?? [];
+          const merged = mergeTranscript(prev, got);
+          if (merged.length === prev.length && merged.every((lineRow, i) => lineRow.text === prev[i]?.text && lineRow.caller === prev[i]?.caller)) return;
+          const next = { ...logsRef.current, [key]: merged };
+          logsRef.current = next;
+          setLogs(next);
+        });
+      }
+      void liveEar(playerId).then((ear) => {
+        if (!on || !ear?.callId) return;
+        const key = callKey(ear.callId);
+        earIdRef.current = ear.callId;
+        if (inProgress(ear.status)) {
+          heldRef.current = ear.callId;
+          setHeldId(ear.callId);
+          setHideTalk(false);
+        }
+        if (ear.lines.length) {
+          const prev = logsRef.current[key] ?? [];
+          const merged = mergeTranscript(prev, ear.lines);
+          const same = merged.length === prev.length && merged.every((lineRow, i) => lineRow.text === prev[i]?.text && lineRow.caller === prev[i]?.caller);
+          if (!same) {
+            const nextLogs = { ...logsRef.current, [key]: merged };
+            logsRef.current = nextLogs;
+            setLogs(nextLogs);
+          }
+        }
+        setCalls((cur) => {
+          const idx = cur.findIndex((row) => callKey(row.callId) === key);
+          if (idx >= 0) {
+            const row = cur[idx]!;
+            const want = inProgress(ear.status) ? "pending" : "done";
+            if (row.status === want) return cur;
+            const next = cur.slice();
+            next[idx] = { ...row, status: want };
+            callsRef.current = next;
+            return next;
+          }
+          const ghost: LiveCall = {
+            callId: ear.callId,
+            caller: ear.caller,
+            text: "",
+            at: ear.at || Date.now(),
+            status: inProgress(ear.status) ? "pending" : ear.status || "done",
+            callerName: "",
+            intent: "",
+            notes: "",
+            callback: "",
+            durationSec: null,
+            reason: "",
+          };
+          const next = [ghost, ...cur];
+          callsRef.current = next;
+          return next;
+        });
       });
     };
     pull();
@@ -643,28 +695,12 @@ function BoothInner() {
       on = false;
       window.clearInterval(timer);
     };
-  }, [playerId, talk?.callId]);
+  }, [playerId]);
 
   useEffect(() => {
     const el = talkRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [liveLines]);
-
-  useEffect(() => {
-    if (!playerId || !openId) return;
-    let on = true;
-    const pull = () => {
-      void callTranscript(playerId, openId).then((rows) => {
-        if (on && rows && rows.length) setLines((prev) => (rows.length >= (prev?.length ?? 0) ? rows : prev));
-      });
-    };
-    pull();
-    const timer = window.setInterval(pull, 2000);
-    return () => {
-      on = false;
-      window.clearInterval(timer);
-    };
-  }, [playerId, openId]);
 
   function choose(lang: Lang) {
     setLocale(lang);
@@ -842,21 +878,9 @@ function BoothInner() {
     nativeUssd(code);
   }
 
-  async function openCall(row: LiveCall) {
-    if (openId === row.callId) {
-      setOpenId("");
-      setLines(null);
-      return;
-    }
-    if (!row.callId) {
-      setOpenId("");
-      setLines(null);
-      return;
-    }
-    setOpenId(row.callId);
-    setLines(null);
-    const next = await callTranscript(playerId, row.callId);
-    setLines(next);
+  function toggleArchive(row: LiveCall) {
+    const key = row.callId || String(row.at);
+    setFolded((cur) => ({ ...cur, [key]: !cur[key] }));
   }
 
   async function copyText(value: string) {
@@ -982,10 +1006,10 @@ function BoothInner() {
   }
 
   function hangUp() {
-    setHideTalk(true);
     setOpen(false);
     setReport("");
     setSummary(null);
+    if (!liveCall && heldId) setHideTalk(true);
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
   }
 
@@ -1081,15 +1105,19 @@ function BoothInner() {
         <label className="mt-4 block text-sm font-semibold">
           {t.call}
           {talk || waiting ? (
-            <div ref={talkRef} className="booth-field mt-1 max-h-52 min-h-24 overflow-y-auto rounded-lg px-3 py-2 text-sm font-normal" aria-live="polite">
-              <p className="booth-faint text-xs font-semibold">{talk ? (talk.callerName || talk.caller || t.caller) + " · " + (inProgress(talk.status) ? t.statusPending : statusLabel(talk.status, t)) : ""}</p>
-              {liveLines.filter((lineRow) => lineRow.text.trim().length > 1).map((lineRow, i) => (
-                <p key={`${talk?.callId ?? "wait"}-${i}`} className="mt-2">
+            <div ref={talkRef} className="booth-field mt-1 max-h-[70vh] min-h-36 overflow-y-auto rounded-lg px-3 py-2 text-sm font-normal" aria-live="polite">
+              <p className="booth-faint text-xs font-semibold">
+                {talk
+                  ? `${talk.callerName || talk.caller || t.caller} · ${inProgress(talk.status) ? (liveLines.length ? t.onLine : t.statusPending) : statusLabel(talk.status, t)}`
+                  : ""}
+              </p>
+              {liveLines.map((lineRow, i) => (
+                <p key={`${talkKey}-${i}`} className="mt-2">
                   <span className="booth-faint font-semibold">{lineRow.caller ? talk?.callerName || talk?.caller || t.caller : t.sol}: </span>
                   {lineRow.text}
                 </p>
               ))}
-              {liveLines.filter((lineRow) => lineRow.text.trim().length > 1).length === 0 ? <p className="booth-muted mt-2">{t.listening}</p> : null}
+              {liveLines.length === 0 ? <p className="booth-muted mt-2">{t.listening}</p> : null}
             </div>
           ) : (
             <textarea
@@ -1306,34 +1334,38 @@ function BoothInner() {
             const at = row.at > 0 && row.at < 1e12 ? row.at * 1000 : row.at;
             return !at || at > Date.now() - 20 * 60 * 60 * 1000;
           }).map((row) => {
+            const at = row.at > 0 && row.at < 1e12 ? row.at * 1000 : row.at;
             const who = row.callerName || (row.caller && row.caller !== "unknown" ? row.caller : "");
-            const open = openId !== "" && openId === row.callId;
-            const when = row.at
-              ? new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(row.at)
-              : "";
             const phone = row.caller && row.caller !== "unknown" && row.caller !== who ? row.caller : "";
+            const when = at
+              ? new Intl.DateTimeFormat(locale === "uk" ? "uk-UA" : "en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(at)
+              : "";
+            const script = row.callId ? logs[callKey(row.callId)] ?? [] : [];
+            const shut = folded[row.callId || String(row.at)] === true;
+            const title = who || phone || t.caller;
             return (
               <li key={row.callId || `${row.at}`} className="booth-chip rounded-lg px-3 py-2">
-                <button type="button" className="w-full text-left" onClick={() => void openCall(row)}>
-                  <p className="text-sm font-semibold">{who || t.caller}</p>
+                <button type="button" className="w-full text-left" onClick={() => toggleArchive(row)}>
+                  <p className="text-sm font-semibold">{title}</p>
                   <p className="booth-faint text-xs font-semibold">
                     {when}
                     {phone ? ` · ${phone}` : ""}
                     {row.durationSec ? ` · ${clock(row.durationSec)}` : ""}
                     {` · ${statusLabel(row.status, t)}`}
                   </p>
+                  {shut && script.length > 0 ? <p className="booth-muted mt-1 line-clamp-2 text-sm">{script[script.length - 1]?.text}</p> : null}
                 </button>
-                {open && lines === null ? <p className="booth-muted mt-2 text-sm">…</p> : null}
-                {open && lines && lines.length > 0 ? (
+                {!shut && script.length > 0 ? (
                   <div className="mt-2 grid gap-1 border-t border-white/10 pt-2">
-                    {lines.filter((lineRow) => lineRow.text.trim().length > 1).map((lineRow, i) => (
-                      <p key={`${row.callId}-${i}`} className="text-sm">
-                        <span className="booth-faint font-semibold">{lineRow.caller ? who || t.caller : t.sol}: </span>
+                    {script.map((lineRow, i) => (
+                      <p key={`${row.callId}-${i}`} className="text-sm leading-relaxed">
+                        <span className="booth-faint font-semibold">{lineRow.caller ? title : t.sol}: </span>
                         {lineRow.text}
                       </p>
                     ))}
                   </div>
                 ) : null}
+                {!shut && script.length === 0 ? <p className="booth-muted mt-2 text-sm">{row.intent || row.text || "…"}</p> : null}
               </li>
             );
           })}

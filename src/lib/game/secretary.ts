@@ -401,6 +401,22 @@ function canonCall(id: string): string {
   return id.replace(/^(rtc|live)_/, "");
 }
 
+function atMs(n: number): number {
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return n < 1e12 ? Math.round(n * 1000) : Math.round(n);
+}
+
+function liveStatus(status: string): boolean {
+  const s = status.toLowerCase();
+  return s === "pending" || s === "live" || s === "active" || s === "ringing" || s === "open" || s === "in-progress" || s === "in_progress" || s === "ongoing";
+}
+
+function preferCall(a: LiveCall, b: LiveCall): LiveCall {
+  const score = (c: LiveCall) =>
+    (c.status === "failed" ? 0 : liveStatus(c.status) ? 3 : 2) + (c.callerName ? 0.5 : 0) + Math.min(c.text.length, 500) / 1000;
+  return score(b) > score(a) ? b : a;
+}
+
 export function parseCalls(raw: unknown): LiveCall[] {
   const items = raw && typeof raw === "object" ? (raw as { items?: unknown }).items : null;
   if (!Array.isArray(items)) return [];
@@ -417,8 +433,8 @@ export function parseCalls(raw: unknown): LiveCall[] {
       callId,
       caller: str(o.caller),
       text: text.slice(0, 600),
-      at: Number(o.at) || 0,
-      status: str(o.status) || (str(o.callId) ? "pending" : "done"),
+      at: atMs(Number(o.at) || 0),
+      status: str(o.status) || (callId ? "pending" : "done"),
       callerName: str(s.caller_name).slice(0, 60),
       intent: str(s.intent).slice(0, 200),
       notes: str(s.notes).slice(0, 400),
@@ -427,23 +443,24 @@ export function parseCalls(raw: unknown): LiveCall[] {
       reason: str(o.reason).slice(0, 40),
     });
   }
-  const good = new Set(all.filter((it) => it.callId && it.status !== "failed").map((it) => canonCall(it.callId)));
-  const seen = new Set<string>();
-  const out: LiveCall[] = [];
+  const byCanon = new Map<string, LiveCall>();
+  const loose: LiveCall[] = [];
   for (const it of all) {
-    if (it.callId && it.status === "failed" && good.has(canonCall(it.callId))) continue;
-    const key = it.callId || `vm:${it.at}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(it);
+    if (!it.callId) {
+      loose.push(it);
+      continue;
+    }
+    const key = canonCall(it.callId);
+    const prev = byCanon.get(key);
+    byCanon.set(key, prev ? preferCall(prev, it) : it);
   }
-  return out.sort((a, b) => b.at - a.at).slice(0, 40);
+  return [...byCanon.values(), ...loose].sort((a, b) => b.at - a.at).slice(0, 40);
 }
 
 export async function listCalls(userId: string): Promise<LiveCall[] | null> {
   if (!userId.trim()) return null;
   try {
-    const res = await fetch(`${BASE}/inbox?userId=${encodeURIComponent(userId)}`);
+    const res = await fetch(`${BASE}/inbox?userId=${encodeURIComponent(userId)}&t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) return null;
     return parseCalls(await parseJson(res));
   } catch {
@@ -493,8 +510,101 @@ function twinId(id: string): string {
   return "";
 }
 
+function lineKey(row: TranscriptLine): string {
+  const text = row.text
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return `${row.caller ? "c" : "s"}:${text}`;
+}
+
+/** Drops empty turns, exact repeats, speech-to-text revisions, and a wrong-script guess. */
+export function tidyTranscript(lines: TranscriptLine[]): TranscriptLine[] {
+  const out: TranscriptLine[] = [];
+  for (const row of lines) {
+    const text = row.text.replace(/\s+/g, " ").trim();
+    if (!text) continue;
+    if (row.caller && wrongScript(text)) continue;
+    const next = { caller: row.caller, text };
+    const prev = out[out.length - 1];
+    if (prev && prev.caller === next.caller) {
+      const a = lineKey(prev).slice(2);
+      const b = lineKey(next).slice(2);
+      if (!b || a === b) continue;
+      if (a && (b.startsWith(a) || a.startsWith(b))) {
+        if (text.length > prev.text.length) out[out.length - 1] = next;
+        continue;
+      }
+    }
+    out.push(next);
+  }
+  return out;
+}
+
+/** Arabic or Persian letters where the caller spoke Ukrainian. Those lines are a bad guess, not the talk. */
+function wrongScript(text: string): boolean {
+  const letters = [...text].filter((ch) => /\p{L}/u.test(ch));
+  if (letters.length < 2) return false;
+  const bad = letters.filter((ch) => /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/u.test(ch)).length;
+  return bad / letters.length > 0.4;
+}
+
+function isPrefix(short: TranscriptLine[], long: TranscriptLine[]): boolean {
+  if (short.length > long.length) return false;
+  return short.every((row, i) => lineKey(row) === lineKey(long[i]!));
+}
+
+/**
+ * Keeps a growing call. A longer snapshot replaces a shorter one that starts
+ * the same way. A shorter poll never wipes lines we already showed.
+ * A sliding window is glued on by the overlapping edge.
+ */
+export function mergeTranscript(prev: TranscriptLine[], next: TranscriptLine[]): TranscriptLine[] {
+  const a = tidyTranscript(prev);
+  const b = tidyTranscript(next);
+  if (b.length === 0) return a;
+  if (a.length === 0) return b;
+  if (isPrefix(a, b)) return b;
+  if (isPrefix(b, a)) return a;
+  if (lineKey(a[0]!) === lineKey(b[0]!)) {
+    if (a.length === b.length) {
+      return a.map((row, i) => {
+        const other = b[i]!;
+        if (row.caller !== other.caller) return other;
+        return other.text.length >= row.text.length ? other : row;
+      });
+    }
+    return a.length > b.length ? a : b;
+  }
+  const max = Math.min(a.length, b.length);
+  for (let n = max; n >= 1; n--) {
+    let same = true;
+    for (let i = 0; i < n; i++) {
+      if (lineKey(a[a.length - n + i]!) !== lineKey(b[i]!)) {
+        same = false;
+        break;
+      }
+    }
+    if (same) return tidyTranscript([...a, ...b.slice(n)]);
+  }
+  return tidyTranscript([...a, ...b]);
+}
+
+const missingCall = new Map<string, number>();
+
 async function pullLines(userId: string, callId: string): Promise<TranscriptLine[] | null> {
-  const res = await fetch(`${BASE}/call?userId=${encodeURIComponent(userId)}&callId=${encodeURIComponent(callId)}`);
+  const skipped = missingCall.get(callId);
+  if (skipped && Date.now() - skipped < 4000) return null;
+  const res = await fetch(
+    `${BASE}/call?userId=${encodeURIComponent(userId)}&callId=${encodeURIComponent(callId)}&t=${Date.now()}`,
+    { cache: "no-store" },
+  );
+  if (res.status === 404) {
+    missingCall.set(callId, Date.now());
+    return null;
+  }
   if (!res.ok) return null;
   const lines = (await parseJson(res)).lines;
   if (!Array.isArray(lines)) return [];
@@ -507,18 +617,67 @@ async function pullLines(userId: string, callId: string): Promise<TranscriptLine
     if (!text) continue;
     out.push({ caller: who === "caller" || who === "user" || who === "human" || who === "in", text });
   }
-  return out;
+  return tidyTranscript(out);
 }
 
 export async function callTranscript(userId: string, callId: string): Promise<TranscriptLine[] | null> {
   if (!userId.trim() || !callId.trim()) return null;
+  const ids = [callId];
+  const twin = twinId(callId);
+  const bare = canonCall(callId);
+  if (twin) ids.push(twin);
+  if (bare && bare !== callId && bare !== twin) ids.push(bare);
   try {
-    const first = await pullLines(userId, callId);
-    const other = twinId(callId);
-    const second = other ? await pullLines(userId, other) : null;
-    if (!first) return second;
-    if (!second) return first;
-    return second.length > first.length ? second : first;
+    const batches = await Promise.all([...new Set(ids)].map((id) => pullLines(userId, id)));
+    let acc: TranscriptLine[] = [];
+    let any = false;
+    for (const rows of batches) {
+      if (!rows) continue;
+      any = true;
+      acc = mergeTranscript(acc, rows);
+    }
+    return any ? acc : null;
+  } catch {
+    return null;
+  }
+}
+
+export type LiveEar = {
+  callId: string;
+  caller: string;
+  status: string;
+  at: number;
+  lines: TranscriptLine[];
+};
+
+/** The call that is on the line right now. Empty when the phone is idle. Misses are null. */
+export async function liveEar(userId: string): Promise<LiveEar | null> {
+  if (!userId.trim()) return null;
+  try {
+    const res = await fetch(`${BASE}/live?userId=${encodeURIComponent(userId)}&t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const body = await parseJson(res);
+    const callId = str(body.callId);
+    if (!callId) return null;
+    const raw = body.lines;
+    const lines: TranscriptLine[] = [];
+    if (Array.isArray(raw)) {
+      for (const row of raw) {
+        if (!row || typeof row !== "object") continue;
+        const o = row as Record<string, unknown>;
+        const who = str(o.who || o.role || o.from).toLowerCase();
+        const text = str(o.text).slice(0, 500);
+        if (!text) continue;
+        lines.push({ caller: who === "caller" || who === "user" || who === "human" || who === "in", text });
+      }
+    }
+    return {
+      callId,
+      caller: str(body.caller),
+      status: str(body.status) || "pending",
+      at: atMs(Number(body.at) || Date.now()),
+      lines: tidyTranscript(lines),
+    };
   } catch {
     return null;
   }
